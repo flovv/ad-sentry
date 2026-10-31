@@ -70,8 +70,12 @@ def report_cmd(
     customer_id: str = typer.Option(..., "--customer-id", "-c", help="Google Ads 10-digit customer ID"),
     start_date: str = typer.Option(..., "--start-date", "-s", help="Start date (YYYY-MM-DD)"),
     end_date: str = typer.Option(..., "--end-date", "-e", help="End date (YYYY-MM-DD)"),
-    format: str = typer.Option("terminal", "--format", "-f", help="Output format: terminal, csv, json"),
+    format: str = typer.Option("terminal", "--format", "-f", help="Output format: terminal, csv, json, html"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="File path to save the output"),
+    deck: Optional[Path] = typer.Option(None, "--deck", "-d", help="Export standalone White-Label HTML pitch deck"),
+    agency: str = typer.Option("Performance Marketing Agency", "--agency", help="Agency name for white-label deck"),
+    brand: str = typer.Option("Client Brand", "--brand", help="Client brand name for white-label deck"),
+    margin: Optional[float] = typer.Option(None, "--margin", "-m", help="Contribution margin rate (e.g. 0.35) for break-even hurdle"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Display account dry-run summary without fetching full report"),
     config: Optional[Path] = typer.Option(None, "--config", help="Path to google-ads.yaml config file"),
 ) -> None:
@@ -91,6 +95,31 @@ def report_cmd(
             return
 
         report = fetch_pmax_delivery(customer_id, s_date, e_date, config_path=config)
+
+        # Handle White-Label Deck generation
+        target_deck_path = deck or (output if format.lower() == "html" else None)
+        if target_deck_path:
+            from pmax_sentry_pro.reporter import generate_white_label_html_deck
+            from services.decision_contracts.generator import create_delivery_review_contract
+            from services.incrementality.economics import calculate_breakeven_hurdle
+
+            hurdle_obj = calculate_breakeven_hurdle(margin) if margin else None
+            contract_obj = create_delivery_review_contract(report)
+            insights_obj = fetch_search_insights(customer_id, s_date, e_date, config_path=config)
+
+            deck_html = generate_white_label_html_deck(
+                delivery_report=report,
+                hurdle=hurdle_obj,
+                decision_contract=contract_obj,
+                search_insights=insights_obj,
+                agency_name=agency,
+                client_brand_name=brand or account.descriptive_name,
+            )
+            target_deck_path.write_text(deck_html, encoding="utf-8")
+            console.print(f"[bold green][OK] Standalone White-Label Audit Deck saved to:[/bold green] {target_deck_path}")
+            if not output and format.lower() != "html":
+                render_delivery_report(report)
+            return
 
         fmt = format.lower()
         if fmt == "csv":
@@ -113,7 +142,7 @@ def report_cmd(
                 output.write_text(export_delivery_report_json(report), encoding="utf-8")
                 console.print(f"[green]JSON copy saved to {output}[/green]")
         else:
-            console.print(f"[bold red]Unsupported format:[/bold red] {format}. Choose from terminal, csv, json.")
+            console.print(f"[bold red]Unsupported format:[/bold red] {format}. Choose from terminal, csv, json, html.")
             raise typer.Exit(code=1)
 
     except Exception as e:
