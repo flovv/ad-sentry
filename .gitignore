@@ -10,5 +10,13 @@ build/
 htmlcov/
 .env
 .venv/
+polar_upload/dist/
+polar_upload/staging*/
+demo_pitch_deck.html
+
 env/
 venv/
+polar_upload/dist/
+polar_upload/staging*/
+demo_pitch_deck.html
+

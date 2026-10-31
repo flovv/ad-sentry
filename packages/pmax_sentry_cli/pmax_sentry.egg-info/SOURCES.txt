@@ -9,4 +9,5 @@ pmax_sentry.egg-info/top_level.txt
 pmax_sentry_cli/__init__.py
 pmax_sentry_cli/cli.py
 pmax_sentry_cli/formatting.py
+pmax_sentry_cli/license_cmd.py
 tests/test_cli.py

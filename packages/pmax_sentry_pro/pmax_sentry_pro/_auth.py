@@ -12,8 +12,23 @@ from typing import Any
 import httpx
 
 POLAR_VALIDATE_URL = "https://api.polar.sh/v1/customer-portal/license-keys/validate"
-POLAR_ORG_ID = os.getenv("POLAR_ORG_ID", "org_pmax_sentry_production")
 HMAC_SECRET = b"pmax_v1_9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d_hmac_key"
+ORG_ID_FILE = Path.home() / ".pmax_polar_org"
+
+
+def get_polar_org_id() -> str:
+    """Returns configured Polar Organization ID from env, file, or default."""
+    if "POLAR_ORG_ID" in os.environ and os.environ["POLAR_ORG_ID"].strip():
+        return os.environ["POLAR_ORG_ID"].strip()
+    if ORG_ID_FILE.exists():
+        try:
+            val = ORG_ID_FILE.read_text(encoding="utf-8").strip()
+            if val:
+                return val
+        except Exception:
+            pass
+    return "org_pmax_sentry_production"
+
 
 TEST_KEYS = {
     "PMAX_TEST_AGENCY_PRO_KEY": {"tier": "agency_pro", "accounts_limit": 50},
@@ -77,7 +92,7 @@ def verify_license(api_key: str | None = None) -> dict[str, Any]:
     try:
         resp = httpx.post(
             POLAR_VALIDATE_URL,
-            json={"key": key, "organization_id": POLAR_ORG_ID},
+            json={"key": key, "organization_id": get_polar_org_id()},
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             timeout=10.0,
         )

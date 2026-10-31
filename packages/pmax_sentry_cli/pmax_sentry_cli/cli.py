@@ -25,12 +25,14 @@ from pmax_sentry_cli.formatting import (
     render_dry_run_panel,
     render_search_insights_report,
 )
+from pmax_sentry_cli.license_cmd import app as license_app
 
 app = typer.Typer(
     name="pmax-audit",
     help="Open-source Google Ads Performance Max delivery observability and reconciliation tool.",
     no_args_is_help=True,
 )
+app.add_typer(license_app, name="license")
 console = Console()
 
 
