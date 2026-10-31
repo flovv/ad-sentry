@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: pmax-sentry-core
+Version: 0.1.0
+Summary: Core schemas, API client, normalization, and reconciliation for PMax Sentry
+License: Apache-2.0
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.0.0
+Provides-Extra: google-ads
+Requires-Dist: google-ads>=26.0.0; extra == "google-ads"
+Provides-Extra: pandas
+Requires-Dist: pandas>=2.0.0; extra == "pandas"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=5.0.0; extra == "dev"
+
+# pmax-sentry-core
+
+Core schemas, Google Ads API v26 queries, normalization, and reconciliation engine for PMax Sentry.
+Provides standard Pydantic v2 data models, strict total vs. segmented delivery reconciliation, and export facilities.
