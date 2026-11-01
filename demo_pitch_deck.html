@@ -6,26 +6,151 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root { --primary: #2563eb; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 2rem; }
-    .container { max-width: 1080px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 2rem; }
-    .brand-title { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; }
-    .agency-subtitle { font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .kpi-card { background: #fff; padding: 1.25rem; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .kpi-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem; }
-    .kpi-value { font-size: 1.75rem; font-weight: 800; color: #0f172a; }
-    .kpi-sub { font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; }
-    .card { background: #fff; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 2rem; }
-    h2 { font-size: 1.25rem; margin-top: 0; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }
-    h3 { font-size: 1rem; color: #334155; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }
-    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; }
-    th { background: #f8fafc; font-weight: 600; color: #475569; }
-    .badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
-    .notice { background: #fef3c7; color: #92400e; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; border-left: 4px solid #f59e0b; margin: 1rem 0; }
-    .footer { text-align: center; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; margin-top: 3rem; }
-    @media print { body { background: #fff; padding: 0; } .card { box-shadow: none; border: 1px solid #cbd5e1; } }
+    * { box-sizing: border-box; }
+    ::selection { background: #dbeafe; color: #1e3a8a; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      margin: 0;
+      padding: 2.5rem 1.5rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1040px; margin: 0 auto; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .agency-subtitle {
+      font-size: 0.875rem;
+      color: #475569;
+      margin-top: 0.35rem;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: #ffffff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }
+    .kpi-value {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-sub {
+      font-size: 0.8125rem;
+      color: #475569;
+      margin-top: 0.35rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .card {
+      background: #ffffff;
+      padding: 1.75rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #0f172a;
+      letter-spacing: -0.015em;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 0.75rem;
+    }
+    h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    p { color: #334155; font-size: 0.9375rem; }
+    ul { margin-top: 0.5rem; padding-left: 1.25rem; color: #334155; font-size: 0.9375rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 1.25rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.8125rem;
+      letter-spacing: 0.02em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .notice {
+      background: #fffbeb;
+      color: #78350f;
+      border: 1px solid #fde68a;
+      padding: 0.85rem 1.15rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin: 1.25rem 0;
+      line-height: 1.45;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: #475569;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 1.75rem;
+      margin-top: 3rem;
+    }
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .card, .kpi-card { box-shadow: none; border: 1px solid #cbd5e1; }
+    }
   </style>
 </head>
 <body>
@@ -35,12 +160,12 @@
         
         <div>
           <h1 class="brand-title">Northwind Retail — Performance Max Audit Deck</h1>
-          <div class="agency-subtitle">Prepared by Nexus Media Group | Window: 2026-10-01 to 2026-10-30</div>
+          <div class="agency-subtitle">Prepared by Nexus Performance Media | Window: 2026-10-01 to 2026-10-30</div>
         </div>
       </div>
-      <div>
-        <span class="badge" style="background: #e2e8f0; color: #334155;">API v26</span>
-        <span class="badge" style="background: #10b981; color: #fff;">COMPLETE</span>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">API v26</span>
+        <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">COMPLETE</span>
       </div>
     </div>
 
@@ -64,7 +189,7 @@
       
         <div class="kpi-card">
           <div class="kpi-label">Break-Even Hurdle (1/μ)</div>
-          <div class="kpi-value" style="color: #6366f1;">2.86x</div>
+          <div class="kpi-value" style="color: #4f46e5;">2.86x</div>
           <div class="kpi-sub">Target Margin: 35.0%</div>
         </div>
         
@@ -73,7 +198,7 @@
     <!-- Delivery Mix Table -->
     <div class="card">
       <h2>Reported Delivery Mix Across Channels</h2>
-      <p style="font-size: 0.9rem; color: #64748b;">
+      <p style="font-size: 0.9375rem; color: #475569; margin-bottom: 0;">
         Delivery distribution segmented via supported Google Ads API channels. Format dimensions (product data & video) are evaluated orthogonally.
       </p>
       <table>
@@ -89,66 +214,66 @@
           
         <tr>
           <td style="font-weight: 600;">Google Search</td>
-          <td style="text-align: right;">USD 539.50</td>
-          <td style="text-align: right;">44.9%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 539.50</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">44.9%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: #2563eb; height: 100%; width: 44.9%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 44.9%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
         
         <tr>
           <td style="font-weight: 600;">Display</td>
-          <td style="text-align: right;">USD 242.00</td>
-          <td style="text-align: right;">20.1%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 242.00</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">20.1%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: #2563eb; height: 100%; width: 20.1%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 20.1%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
         
         <tr>
           <td style="font-weight: 600;">YouTube</td>
-          <td style="text-align: right;">USD 240.48</td>
-          <td style="text-align: right;">20.0%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 240.48</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">20.0%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: #2563eb; height: 100%; width: 20.0%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 20.0%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
         
         <tr>
           <td style="font-weight: 600;">Gmail</td>
-          <td style="text-align: right;">USD 60.55</td>
-          <td style="text-align: right;">5.0%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 60.55</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">5.0%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: #2563eb; height: 100%; width: 5.0%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 5.0%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
         
         <tr>
           <td style="font-weight: 600;">Discover</td>
-          <td style="text-align: right;">USD 60.06</td>
-          <td style="text-align: right;">5.0%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 60.06</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">5.0%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: #2563eb; height: 100%; width: 5.0%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 5.0%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
         
         <tr>
           <td style="font-weight: 600;">Search Partners</td>
-          <td style="text-align: right;">USD 59.32</td>
-          <td style="text-align: right;">4.9%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 59.32</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">4.9%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: #2563eb; height: 100%; width: 4.9%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 4.9%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
@@ -160,8 +285,8 @@
     <!-- Reconciliation Audit -->
     <div class="card">
       <h2>Account Reconciliation & Coverage Audit</h2>
-      <div style="display: flex; gap: 2rem; margin-bottom: 1rem;">
-        <div><strong>Reconciliation Status:</strong> <span class="badge" style="background: #10b981; color: #fff;">COMPLETE</span></div>
+      <div style="display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <div><strong>Reconciliation Status:</strong> <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">COMPLETE</span></div>
         <div><strong>Coverage Ratio:</strong> 1.0000</div>
         <div><strong>Raw Difference:</strong> USD 0.00</div>
       </div>
@@ -176,7 +301,7 @@
     
         <div class="card">
           <h2>Search Demand Insight Categories</h2>
-          <p class="notice">⚠️ Search categories reflect consumer search demand volume only; they do NOT contain ad cost or spend metrics.</p>
+          <p class="notice"><strong>Demand Notice:</strong> Search categories reflect consumer search demand volume only; they do not contain ad cost or spend metrics.</p>
           <table>
             <thead>
               <tr>
@@ -191,82 +316,82 @@
               
             <tr>
               <td>brand clothing</td>
-              <td style="text-align: right;">450</td>
-              <td style="text-align: right;">8,200</td>
-              <td style="text-align: right;">25,000</td>
-              <td style="text-align: right;">24.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">450</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">8,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">25,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">24.0</td>
             </tr>
             
             <tr>
               <td>acme official shoes</td>
-              <td style="text-align: right;">320</td>
-              <td style="text-align: right;">5,600</td>
-              <td style="text-align: right;">18,000</td>
-              <td style="text-align: right;">18.5</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">320</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5,600</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18.5</td>
             </tr>
             
             <tr>
               <td>running sneakers men</td>
-              <td style="text-align: right;">890</td>
-              <td style="text-align: right;">19,500</td>
-              <td style="text-align: right;">65,000</td>
-              <td style="text-align: right;">32.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">890</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">19,500</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">65,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32.0</td>
             </tr>
             
             <tr>
               <td>trail running shoes waterproof</td>
-              <td style="text-align: right;">410</td>
-              <td style="text-align: right;">9,800</td>
-              <td style="text-align: right;">32,000</td>
-              <td style="text-align: right;">14.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">410</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">9,800</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">14.0</td>
             </tr>
             
             <tr>
               <td>marathon accessories lightweight</td>
-              <td style="text-align: right;">210</td>
-              <td style="text-align: right;">4,300</td>
-              <td style="text-align: right;">14,000</td>
-              <td style="text-align: right;">6.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">210</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">4,300</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">14,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">6.0</td>
             </tr>
             
             <tr>
               <td>unclassified search terms</td>
-              <td style="text-align: right;">110</td>
-              <td style="text-align: right;">2,200</td>
-              <td style="text-align: right;">5,000</td>
-              <td style="text-align: right;">2.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">110</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">2,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">2.0</td>
             </tr>
             
             <tr>
               <td>brand clothing</td>
-              <td style="text-align: right;">450</td>
-              <td style="text-align: right;">8,200</td>
-              <td style="text-align: right;">25,000</td>
-              <td style="text-align: right;">24.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">450</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">8,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">25,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">24.0</td>
             </tr>
             
             <tr>
               <td>acme official shoes</td>
-              <td style="text-align: right;">320</td>
-              <td style="text-align: right;">5,600</td>
-              <td style="text-align: right;">18,000</td>
-              <td style="text-align: right;">18.5</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">320</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5,600</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18.5</td>
             </tr>
             
             <tr>
               <td>running sneakers men</td>
-              <td style="text-align: right;">890</td>
-              <td style="text-align: right;">19,500</td>
-              <td style="text-align: right;">65,000</td>
-              <td style="text-align: right;">32.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">890</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">19,500</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">65,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32.0</td>
             </tr>
             
             <tr>
               <td>trail running shoes waterproof</td>
-              <td style="text-align: right;">410</td>
-              <td style="text-align: right;">9,800</td>
-              <td style="text-align: right;">32,000</td>
-              <td style="text-align: right;">14.0</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">410</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">9,800</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">14.0</td>
             </tr>
             
             </tbody>
@@ -278,12 +403,12 @@
           <h2>Decision Contract & Recommendations</h2>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
             <div>
-              <strong>Contract ID:</strong> <code>cntr_fcdc16654ae3</code><br>
-              <strong>Evidence Class:</strong> <span class="badge" style="background: #1e3a8a; color: #93c5fd;">EvidenceClass.REPORTED</span><br>
-              <strong>Recommendation:</strong> <span class="badge" style="background: #065f46; color: #a7f3d0;">REVIEW</span>
+              <strong>Contract ID:</strong> <code>cntr_eb849bcbaf1d</code><br>
+              <strong>Evidence Class:</strong> <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">EvidenceClass.REPORTED</span><br>
+              <strong>Recommendation:</strong> <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">REVIEW</span>
             </div>
             <div>
-              <strong>Valid Until:</strong> 2026-11-14<br>
+              <strong>Valid Until:</strong> 2026-11-15<br>
               <strong>Human Approval Required:</strong> Yes (Read-Only Guarantee)
             </div>
           </div>
@@ -295,7 +420,7 @@
         
 
     <div class="footer">
-      Generated with PMax Sentry Pro for Nexus Media Group. Verified read-only execution. No live campaign mutations.
+      Generated with PMax Sentry Pro for Nexus Performance Media. Verified read-only execution. No live campaign mutations.
     </div>
   </div>
 </body>

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PMax Delivery & Incrementality Audit — Lumina Living</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --border-subtle: #f1f5f9;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    ::selection {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 3rem 1.5rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.75rem;
+      margin-bottom: 2.25rem;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .brand-title {
+      font-size: 1.625rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+    }
+    .agency-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      font-weight: 400;
+    }
+    .meta-badges {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-api {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    .badge-complete {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .badge-warning {
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .badge-danger {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      padding: 1.35rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .kpi-value {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+    .kpi-sub {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .card {
+      background: var(--card-bg);
+      padding: 1.75rem 2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.015em;
+      margin-bottom: 0.5rem;
+    }
+    .section-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 0.8rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .progress-track {
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      height: 8px;
+      width: 100%;
+    }
+    .progress-fill {
+      background: var(--primary);
+      height: 100%;
+      border-radius: 4px;
+    }
+    .notice {
+      background: #fffbeb;
+      color: #78350f;
+      border: 1px solid #fde68a;
+      padding: 0.85rem 1.15rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin: 1.25rem 0 0.5rem;
+      line-height: 1.5;
+    }
+    .notice strong {
+      color: #92400e;
+    }
+    .notice-critical {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin: 1.25rem 0;
+      line-height: 1.5;
+    }
+    .notice-critical strong {
+      color: #7f1d1d;
+    }
+    .audit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .audit-item-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.25rem;
+    }
+    .audit-item-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .contract-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .contract-item {
+      font-size: 0.875rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .contract-item strong {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.8125rem;
+      display: inline-block;
+      width: 140px;
+    }
+    ul.bullet-list {
+      padding-left: 1.25rem;
+      color: var(--text);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-top: 0.5rem;
+    }
+    ul.bullet-list li {
+      margin-bottom: 0.35rem;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+      margin-top: 3rem;
+    }
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .card, .kpi-card {
+        box-shadow: none;
+        border: 1px solid #cbd5e1;
+      }
+    }
+    @media (max-width: 640px) {
+      .contract-grid {
+        grid-template-columns: 1fr;
+      }
+      .contract-item strong {
+        width: 100%;
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <h1 class="brand-title">Lumina Living — Performance Max Audit Deck</h1>
+        <div class="agency-subtitle">Prepared by Nexus Performance Media &middot; Evaluation Window: 2026-09-01 to 2026-09-30 (30 Days)</div>
+      </div>
+      <div class="meta-badges">
+        <span class="badge badge-api">API v26</span>
+        <span class="badge badge-complete">RECONCILIATION: COMPLETE</span>
+      </div>
+    </header>
+
+    <!-- Executive KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Audited Ad Spend</div>
+        <div class="kpi-value">&euro; 85,420.00</div>
+        <div class="kpi-sub">5,976,600 imps &middot; 74,570 clicks</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Attributed Value</div>
+        <div class="kpi-value">&euro; 361,250.00</div>
+        <div class="kpi-sub">Platform-reported conversions</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Platform ROAS</div>
+        <div class="kpi-value" style="color: var(--primary);">4.25x</div>
+        <div class="kpi-sub">Blended average attribution</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Break-Even Hurdle (1/&mu;)</div>
+        <div class="kpi-value" style="color: #4f46e5;">3.57x</div>
+        <div class="kpi-sub">Pre-media margin &mu; = 28.0%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Measured Causal iROAS</div>
+        <div class="kpi-value" style="color: #b91c1c;">1.64x</div>
+        <div class="kpi-sub">DiD Geo-Holdout [95% CI: 1.05 &ndash; 2.23]</div>
+      </div>
+    </div>
+
+    <!-- Executive Alert Notice -->
+    <div class="notice-critical">
+      <strong>Incrementality Reality Check:</strong> While Google Ads reported an enviable <strong>4.25x ROAS</strong>, prospective DiD geo-experimentation measured an actual causal return of <strong>1.64x iROAS</strong>. At a 28.0% contribution margin, each incremental euro of ad spend generated only 0.46 &euro; in gross margin &mdash; producing an operational loss of <strong>-0.54 &euro; per incremental euro spent</strong> (-29,971 &euro;/month).
+    </div>
+
+    <!-- Delivery Mix Table -->
+    <section class="card">
+      <h2>Reported Delivery Mix Across Channels</h2>
+      <p class="section-desc">
+        Delivery distribution segmented via supported Google Ads API channels. Format dimensions (Merchant Center product feed & video assets) are evaluated orthogonally.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Feed Data</th>
+            <th>Video Asset</th>
+            <th class="num">Spend</th>
+            <th class="num">Share</th>
+            <th style="width: 25%;">Visual Distribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight: 600;">Google Search (Shopping)</td>
+            <td><span class="badge badge-complete">Yes</span></td>
+            <td><span class="badge badge-api">No</span></td>
+            <td class="num">&euro; 44,640.00</td>
+            <td class="num">52.4%</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: 52.4%;"></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">YouTube</td>
+            <td><span class="badge badge-api">No</span></td>
+            <td><span class="badge badge-complete">Yes</span></td>
+            <td class="num">&euro; 13,800.00</td>
+            <td class="num">16.2%</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: 16.2%;"></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Display Network</td>
+            <td><span class="badge badge-complete">Yes</span></td>
+            <td><span class="badge badge-api">No</span></td>
+            <td class="num">&euro; 12,610.00</td>
+            <td class="num">14.8%</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: 14.8%;"></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Google Search (Text)</td>
+            <td><span class="badge badge-api">No</span></td>
+            <td><span class="badge badge-api">No</span></td>
+            <td class="num">&euro; 9,455.00</td>
+            <td class="num">11.1%</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: 11.1%;"></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Cross-Network / Gmail / Discover</td>
+            <td><span class="badge badge-complete">Yes</span></td>
+            <td><span class="badge badge-api">No</span></td>
+            <td class="num">&euro; 4,685.50</td>
+            <td class="num">5.5%</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: 5.5%;"></div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Reconciliation Audit -->
+    <section class="card">
+      <h2>Account Reconciliation & Coverage Audit</h2>
+      <p class="section-desc">
+        Dual-query audit comparing unsegmented campaign totals against segmented delivery records over identical customer ID and date windows.
+      </p>
+      <div class="audit-grid">
+        <div>
+          <div class="audit-item-label">Reconciliation Status</div>
+          <div class="audit-item-value"><span class="badge badge-complete">COMPLETE</span></div>
+        </div>
+        <div>
+          <div class="audit-item-label">Campaign Total Spend</div>
+          <div class="audit-item-value">&euro; 85,420.00</div>
+        </div>
+        <div>
+          <div class="audit-item-label">Summed Segmented Spend</div>
+          <div class="audit-item-value">&euro; 85,190.50</div>
+        </div>
+        <div>
+          <div class="audit-item-label">Raw Difference</div>
+          <div class="audit-item-value">+&euro; 229.50 (99.73% Coverage)</div>
+        </div>
+      </div>
+      <ul class="bullet-list">
+        <li>Segmented cost (85,190,500,000 micros) reconciles with total (85,420,000,000 micros) within 0.27% tolerance.</li>
+        <li>Difference reflects cross-network micro-rounding and timezone boundaries across API v26 resources.</li>
+      </ul>
+      <div class="notice">
+        <strong>Measurement Discipline:</strong> Discrepancies between campaign totals and segmented reporting are preserved as unclassified differences. In accordance with audit standards, discrepancies are never artificially attributed to Display, Video, or platform waste.
+      </div>
+    </section>
+
+    <!-- Search Demand Insights -->
+    <section class="card">
+      <h2>Search Demand Insight Categories</h2>
+      <p class="section-desc">
+        Consumer search intent categories analyzed via <code>campaign_search_term_insight</code>.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Category Label</th>
+            <th>Query Classification</th>
+            <th class="num">Clicks</th>
+            <th class="num">Impressions</th>
+            <th class="num">Search Volume</th>
+            <th class="num">Attributed Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight: 600;">lumina living</td>
+            <td><span class="badge badge-warning">Brand Direct</span></td>
+            <td class="num">9,420</td>
+            <td class="num">48,200</td>
+            <td class="num">32,000</td>
+            <td class="num">&euro; 72,400.00</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">lumina furniture online</td>
+            <td><span class="badge badge-warning">Brand Navigational</span></td>
+            <td class="num">4,150</td>
+            <td class="num">22,600</td>
+            <td class="num">14,000</td>
+            <td class="num">&euro; 38,100.00</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">modular sofa velvet</td>
+            <td><span class="badge badge-api">Generic Category</span></td>
+            <td class="num">5,120</td>
+            <td class="num">86,400</td>
+            <td class="num">45,000</td>
+            <td class="num">&euro; 34,200.00</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">scandinavian dining table solid wood</td>
+            <td><span class="badge badge-api">Generic Category</span></td>
+            <td class="num">3,980</td>
+            <td class="num">54,200</td>
+            <td class="num">28,000</td>
+            <td class="num">&euro; 26,400.00</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">minimalist ceramic table lamp</td>
+            <td><span class="badge badge-api">Generic Category</span></td>
+            <td class="num">2,640</td>
+            <td class="num">31,500</td>
+            <td class="num">18,000</td>
+            <td class="num">&euro; 18,200.00</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="notice">
+        <strong>Demand Notice:</strong> Search categories reflect consumer search demand volume only; they do not contain ad cost or spend metrics. Under Google Ads API v26, search insight records omit cost metrics. Never subtract category values to fabricate brand-search spend.
+      </div>
+    </section>
+
+    <!-- Decision Contract -->
+    <section class="card">
+      <h2>Formal Decision Contract &amp; Remediation</h2>
+      <div class="contract-grid">
+        <div class="contract-item">
+          <div><strong>Contract ID:</strong> <code>cntr_lumina_did_202609</code></div>
+          <div><strong>Evidence Class:</strong> <span class="badge badge-api">EXPERIMENTAL (DiD)</span></div>
+          <div><strong>Status:</strong> <span class="badge badge-warning">ACTION REQUIRED</span></div>
+        </div>
+        <div class="contract-item">
+          <div><strong>Target Margin &mu;:</strong> 28.0% (COGS 52%, Shipping 11%, Returns 9%)</div>
+          <div><strong>Break-Even Hurdle:</strong> 3.57x Incremental ROAS</div>
+          <div><strong>Milestone Date:</strong> 2026-10-26 (21-Day Review)</div>
+        </div>
+      </div>
+      <h3 style="font-size: 0.9375rem; margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text);">Remediation Directives:</h3>
+      <ul class="bullet-list">
+        <li><strong>Deploy Brand Exclusion List:</strong> Apply Google Ads Brand Exclusion list to PMax campaign to force discovery of incremental generic shopping demand.</li>
+        <li><strong>Isolate Brand Search:</strong> Capture high-intent brand demand via dedicated exact-match Search campaign with Target Impression Share = 95% and CPC capped at &euro; 0.25.</li>
+        <li><strong>Increase Target ROAS:</strong> Raise PMax Target ROAS from 380% to 520% to suppress unprofitable low-intent Display and YouTube bidding.</li>
+        <li><strong>Read-Only Guarantee:</strong> No live account mutations are performed autonomously. All changes require advertiser authorization.</li>
+      </ul>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      Generated with PMax Sentry Pro for Nexus Performance Media &middot; Verified Read-Only Execution &middot; Strict Evidence Discipline
+    </footer>
+  </div>
+</body>
+</html>

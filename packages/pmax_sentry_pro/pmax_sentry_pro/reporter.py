@@ -37,14 +37,20 @@ def generate_white_label_html_deck(
         agg_channels[r.channel] = agg_channels.get(r.channel, Decimal(0)) + r.cost
     sorted_channels = sorted(agg_channels.items(), key=lambda x: x[1], reverse=True)
 
-    status_badge_color = "#10b981" if cov.status == "COMPLETE" else "#f59e0b" if cov.status == "PARTIAL" else "#ef4444"
+    status_badge_style = (
+        "background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;"
+        if cov.status == "COMPLETE"
+        else "background: #fffbeb; color: #92400e; border: 1px solid #fde68a;"
+        if cov.status == "PARTIAL"
+        else "background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;"
+    )
 
     hurdle_card = ""
     if hurdle:
         hurdle_card = f"""
         <div class="kpi-card">
           <div class="kpi-label">Break-Even Hurdle (1/μ)</div>
-          <div class="kpi-value" style="color: #6366f1;">{hurdle.breakeven_iroas:.2f}x</div>
+          <div class="kpi-value" style="color: #4f46e5;">{hurdle.breakeven_iroas:.2f}x</div>
           <div class="kpi-sub">Target Margin: {hurdle.contribution_margin_rate:.1%}</div>
         </div>
         """
@@ -55,11 +61,11 @@ def generate_white_label_html_deck(
         channel_rows_html += f"""
         <tr>
           <td style="font-weight: 600;">{html.escape(ch)}</td>
-          <td style="text-align: right;">{delivery_report.currency_code} {cost:,.2f}</td>
-          <td style="text-align: right;">{share:.1f}%</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">{delivery_report.currency_code} {cost:,.2f}</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">{share:.1f}%</td>
           <td>
-            <div style="background: #e5e7eb; border-radius: 4px; overflow: hidden; height: 10px; width: 100%;">
-              <div style="background: {primary_color_hex}; height: 100%; width: {share:.1f}%;"></div>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: {primary_color_hex}; height: 100%; width: {share:.1f}%; border-radius: 4px;"></div>
             </div>
           </td>
         </tr>
@@ -75,16 +81,16 @@ def generate_white_label_html_deck(
             rows_si += f"""
             <tr>
               <td>{html.escape(sr.category_label)}</td>
-              <td style="text-align: right;">{sr.clicks:,}</td>
-              <td style="text-align: right;">{sr.impressions:,}</td>
-              <td style="text-align: right;">{vol}</td>
-              <td style="text-align: right;">{sr.conversions:.1f}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{sr.clicks:,}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{sr.impressions:,}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{vol}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{sr.conversions:.1f}</td>
             </tr>
             """
         search_insights_section = f"""
         <div class="card">
           <h2>Search Demand Insight Categories</h2>
-          <p class="notice">⚠️ Search categories reflect consumer search demand volume only; they do NOT contain ad cost or spend metrics.</p>
+          <p class="notice"><strong>Demand Notice:</strong> Search categories reflect consumer search demand volume only; they do not contain ad cost or spend metrics.</p>
           <table>
             <thead>
               <tr>
@@ -111,8 +117,8 @@ def generate_white_label_html_deck(
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
             <div>
               <strong>Contract ID:</strong> <code>{html.escape(decision_contract.contract_id)}</code><br>
-              <strong>Evidence Class:</strong> <span class="badge" style="background: #1e3a8a; color: #93c5fd;">{decision_contract.evidence_class}</span><br>
-              <strong>Recommendation:</strong> <span class="badge" style="background: #065f46; color: #a7f3d0;">{decision_contract.recommendation_type}</span>
+              <strong>Evidence Class:</strong> <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">{decision_contract.evidence_class}</span><br>
+              <strong>Recommendation:</strong> <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">{decision_contract.recommendation_type}</span>
             </div>
             <div>
               <strong>Valid Until:</strong> {decision_contract.valid_until}<br>
@@ -136,26 +142,151 @@ def generate_white_label_html_deck(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {{ --primary: {primary_color_hex}; }}
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 2rem; }}
-    .container {{ max-width: 1080px; margin: 0 auto; }}
-    .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 2rem; }}
-    .brand-title {{ font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; }}
-    .agency-subtitle {{ font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }}
-    .kpi-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }}
-    .kpi-card {{ background: #fff; padding: 1.25rem; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
-    .kpi-label {{ font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem; }}
-    .kpi-value {{ font-size: 1.75rem; font-weight: 800; color: #0f172a; }}
-    .kpi-sub {{ font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; }}
-    .card {{ background: #fff; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 2rem; }}
-    h2 {{ font-size: 1.25rem; margin-top: 0; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }}
-    h3 {{ font-size: 1rem; color: #334155; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }}
-    th, td {{ padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; }}
-    th {{ background: #f8fafc; font-weight: 600; color: #475569; }}
-    .badge {{ display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }}
-    .notice {{ background: #fef3c7; color: #92400e; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; border-left: 4px solid #f59e0b; margin: 1rem 0; }}
-    .footer {{ text-align: center; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; margin-top: 3rem; }}
-    @media print {{ body {{ background: #fff; padding: 0; }} .card {{ box-shadow: none; border: 1px solid #cbd5e1; }} }}
+    * {{ box-sizing: border-box; }}
+    ::selection {{ background: #dbeafe; color: #1e3a8a; }}
+    body {{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      margin: 0;
+      padding: 2.5rem 1.5rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }}
+    .container {{ max-width: 1040px; margin: 0 auto; }}
+    .header {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }}
+    .brand-title {{
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }}
+    .agency-subtitle {{
+      font-size: 0.875rem;
+      color: #475569;
+      margin-top: 0.35rem;
+    }}
+    .kpi-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }}
+    .kpi-card {{
+      background: #ffffff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    }}
+    .kpi-label {{
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }}
+    .kpi-value {{
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }}
+    .kpi-sub {{
+      font-size: 0.8125rem;
+      color: #475569;
+      margin-top: 0.35rem;
+      font-variant-numeric: tabular-nums;
+    }}
+    .card {{
+      background: #ffffff;
+      padding: 1.75rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+      margin-bottom: 2rem;
+    }}
+    h2 {{
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #0f172a;
+      letter-spacing: -0.015em;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 0.75rem;
+    }}
+    h3 {{
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }}
+    p {{ color: #334155; font-size: 0.9375rem; }}
+    ul {{ margin-top: 0.5rem; padding-left: 1.25rem; color: #334155; font-size: 0.9375rem; }}
+    li {{ margin-bottom: 0.35rem; }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 1.25rem;
+      font-variant-numeric: tabular-nums;
+    }}
+    th, td {{
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #f1f5f9;
+    }}
+    th {{
+      background: #f8fafc;
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.8125rem;
+      letter-spacing: 0.02em;
+    }}
+    .badge {{
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }}
+    .notice {{
+      background: #fffbeb;
+      color: #78350f;
+      border: 1px solid #fde68a;
+      padding: 0.85rem 1.15rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin: 1.25rem 0;
+      line-height: 1.45;
+    }}
+    .footer {{
+      text-align: center;
+      font-size: 0.8125rem;
+      color: #475569;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 1.75rem;
+      margin-top: 3rem;
+    }}
+    @media print {{
+      body {{ background: #ffffff; padding: 0; }}
+      .card, .kpi-card {{ box-shadow: none; border: 1px solid #cbd5e1; }}
+    }}
   </style>
 </head>
 <body>
@@ -168,9 +299,9 @@ def generate_white_label_html_deck(
           <div class="agency-subtitle">Prepared by {html.escape(agency_name)} | Window: {delivery_report.start_date} to {delivery_report.end_date}</div>
         </div>
       </div>
-      <div>
-        <span class="badge" style="background: #e2e8f0; color: #334155;">API {html.escape(delivery_report.api_version)}</span>
-        <span class="badge" style="background: {status_badge_color}; color: #fff;">{cov.status}</span>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">API {html.escape(delivery_report.api_version)}</span>
+        <span class="badge" style="{status_badge_style}">{cov.status}</span>
       </div>
     </div>
 
@@ -197,7 +328,7 @@ def generate_white_label_html_deck(
     <!-- Delivery Mix Table -->
     <div class="card">
       <h2>Reported Delivery Mix Across Channels</h2>
-      <p style="font-size: 0.9rem; color: #64748b;">
+      <p style="font-size: 0.9375rem; color: #475569; margin-bottom: 0;">
         Delivery distribution segmented via supported Google Ads API channels. Format dimensions (product data & video) are evaluated orthogonally.
       </p>
       <table>
@@ -218,8 +349,8 @@ def generate_white_label_html_deck(
     <!-- Reconciliation Audit -->
     <div class="card">
       <h2>Account Reconciliation & Coverage Audit</h2>
-      <div style="display: flex; gap: 2rem; margin-bottom: 1rem;">
-        <div><strong>Reconciliation Status:</strong> <span class="badge" style="background: {status_badge_color}; color: #fff;">{cov.status}</span></div>
+      <div style="display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <div><strong>Reconciliation Status:</strong> <span class="badge" style="{status_badge_style}">{cov.status}</span></div>
         <div><strong>Coverage Ratio:</strong> {cov.coverage_ratio if cov.coverage_ratio is not None else 'N/A'}</div>
         <div><strong>Raw Difference:</strong> {delivery_report.currency_code} {(Decimal(cov.difference_micros)/Decimal(1000000)):,.2f}</div>
       </div>
