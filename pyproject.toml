@@ -3,23 +3,94 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pmax-auditor-suite"
+name = "pmax-sentry"
 version = "0.1.0"
-description = "Comprehensive Google Ads Performance Max delivery observability and incrementality measurement suite"
+description = "Comprehensive Google Ads Performance Max, Demand Gen & Meta Advantage+ delivery observability, audit and incrementality measurement suite"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+authors = [
+    { name = "Flo", email = "teschner@gmail.com" }
+]
+keywords = [
+    "google-ads",
+    "performance-max",
+    "pmax",
+    "meta-ads",
+    "advantage-plus",
+    "demand-gen",
+    "ad-audit",
+    "incrementality",
+    "roas",
+    "mcp",
+    "polar",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "pmax-sentry-core",
-    "pmax-sentry",
-    "pmax-sentry-pro",
-    "pmax-sentry-mcp",
+    "pydantic>=2.0.0",
+    "typer>=0.12.0",
+    "rich>=13.0.0",
+    "httpx>=0.24.0",
+    "mcp>=1.0.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["services*", "apps*"]
+[project.optional-dependencies]
+google-ads = [
+    "google-ads>=26.0.0",
+]
+all = [
+    "google-ads>=26.0.0",
+    "pandas>=2.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "respx>=0.23.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
+]
+
+[project.scripts]
+pmax-audit = "pmax_sentry_cli.cli:app"
+pmax-mcp = "pmax_sentry_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/flovv/pmax-sentry"
+Documentation = "https://github.com/flovv/pmax-sentry#readme"
+Repository = "https://github.com/flovv/pmax-sentry.git"
+Issues = "https://github.com/flovv/pmax-sentry/issues"
+"Buy Agency Pro" = "https://polar.sh/pmax-sentry"
+
+[tool.setuptools]
+package-dir = { "" = ".", "pmax_sentry_core" = "packages/pmax_sentry_core/pmax_sentry_core", "pmax_sentry_cli" = "packages/pmax_sentry_cli/pmax_sentry_cli", "pmax_sentry_pro" = "packages/pmax_sentry_pro/pmax_sentry_pro", "pmax_sentry_mcp" = "packages/pmax_sentry_mcp/pmax_sentry_mcp" }
+packages = [
+    "apps",
+    "apps.pro_api",
+    "apps.pro_api.routers",
+    "services",
+    "services.data_ingestion",
+    "services.data_quality",
+    "services.decision_contracts",
+    "services.incrementality",
+    "pmax_sentry_core",
+    "pmax_sentry_cli",
+    "pmax_sentry_pro",
+    "pmax_sentry_mcp",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests", "packages"]
+
