@@ -58,7 +58,9 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
             can_manage_clients=False,
         )
 
-    def list_pmax_campaigns(self, customer_id: str) -> list[CampaignInfo]:
+    def list_pmax_campaigns(
+        self, customer_id: str, include_demand_gen: bool = False
+    ) -> list[CampaignInfo]:
         cid = customer_id.replace("-", "").strip()
         if cid.startswith("4"):
             return [
@@ -71,7 +73,7 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
                     target_roas=3.0,
                 )
             ]
-        return [
+        base_campaigns = [
             CampaignInfo(
                 id="10001",
                 name="PMax - Core Product Feed",
@@ -97,22 +99,34 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
                 target_roas=None,
             ),
         ]
+        if include_demand_gen:
+            base_campaigns.append(
+                CampaignInfo(
+                    id="20001",
+                    name="Demand Gen - Video & Shorts Prospecting",
+                    status="ENABLED",
+                    advertising_channel_type="DEMAND_GEN",
+                    bidding_strategy_type="MAXIMIZE_CONVERSIONS",
+                    target_roas=2.0,
+                )
+            )
+        return base_campaigns
 
     def query_segmented_delivery(
-        self, customer_id: str, start_date: date, end_date: date
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> list[DeliveryRow]:
         cid = customer_id.replace("-", "").strip()
         if cid.startswith("4"):
             return []
 
         account = self.get_account_info(cid)
-        campaigns = [c for c in self.list_pmax_campaigns(cid) if c.status == "ENABLED"]
+        campaigns = [
+            c for c in self.list_pmax_campaigns(cid, include_demand_gen=include_demand_gen) if c.status == "ENABLED"
+        ]
         rows: list[DeliveryRow] = []
 
-        # Channel & format combinations as per spec Section 4.1:
-        # Channels: Google Search, Search Partners, Display, YouTube, Discover, Gmail
-        # Formats: uses_product_data (bool), uses_video (bool)
-        segments_profile = [
+        # PMax Channel & format combinations
+        pmax_segments_profile = [
             ("Google Search", True, False, 0.35, 3.8),     # 35% spend, roas ~ 3.8
             ("Google Search", False, False, 0.10, 3.2),    # 10% spend
             ("Search Partners", False, False, 0.05, 2.1),  # 5% spend
@@ -124,6 +138,13 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
             ("Gmail", True, False, 0.05, 2.2),             # 5% spend
         ]
 
+        # Demand Gen Channel & format combinations (YouTube, Discover, Gmail)
+        demand_gen_profile = [
+            ("YouTube", False, True, 0.55, 1.4),           # 55% spend on YouTube / Shorts
+            ("Discover", True, False, 0.30, 2.1),          # 30% spend on Discover
+            ("Gmail", False, False, 0.15, 1.7),            # 15% spend on Gmail
+        ]
+
         curr_date = start_date
         day_count = (end_date - start_date).days + 1
         base_daily_spend_micros = 1_200_000_000 // max(1, day_count)  # ~$1200 total spend across period
@@ -133,9 +154,12 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
             rng = random.Random(day_seed + int(cid[:5]))
 
             for camp in campaigns:
+                is_dg = camp.advertising_channel_type == "DEMAND_GEN"
+                segments_profile = demand_gen_profile if is_dg else pmax_segments_profile
+                camp_spend_weight = 0.35 if is_dg else (0.65 / max(1, len(campaigns) - 1))
+
                 for channel, uses_prod, uses_vid, spend_share, target_roas in segments_profile:
-                    daily_micros = int(base_daily_spend_micros * spend_share / len(campaigns))
-                    # add small deterministic variation (+- 10%)
+                    daily_micros = int(base_daily_spend_micros * camp_spend_weight * spend_share)
                     variation = 0.9 + (rng.random() * 0.2)
                     cost_micros = int(daily_micros * variation)
 
@@ -150,6 +174,12 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
                     cvr = 0.035 if "Search" in channel else 0.012
                     conversions = Decimal(str(round(clicks * cvr, 2)))
 
+                    # Demand Gen has high view-through conversion ratio (EVC/VT) vs PMax
+                    if is_dg:
+                        vt_conversions = (conversions * Decimal("1.55")).quantize(Decimal("0.01"))
+                    else:
+                        vt_conversions = (conversions * Decimal("0.08")).quantize(Decimal("0.01"))
+
                     spend_units = Decimal(cost_micros) / Decimal(1_000_000)
                     conv_val = (spend_units * Decimal(str(target_roas)) * Decimal(str(variation))).quantize(Decimal("0.01"))
 
@@ -158,6 +188,7 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
                             customer_id=cid,
                             campaign_id=camp.id,
                             campaign_name=camp.name,
+                            advertising_channel_type=camp.advertising_channel_type,
                             date=curr_date,
                             channel=channel,
                             uses_product_data=uses_prod,
@@ -168,6 +199,7 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
                             clicks=clicks,
                             conversions=conversions,
                             conversion_value=conv_val,
+                            view_through_conversions=vt_conversions,
                         )
                     )
             curr_date += timedelta(days=1)
@@ -175,9 +207,11 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
         return rows
 
     def query_unsegmented_totals(
-        self, customer_id: str, start_date: date, end_date: date
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> int:
-        segmented_rows = self.query_segmented_delivery(customer_id, start_date, end_date)
+        segmented_rows = self.query_segmented_delivery(
+            customer_id, start_date, end_date, include_demand_gen=include_demand_gen
+        )
         segmented_total = sum(r.cost_micros for r in segmented_rows)
 
         if segmented_total == 0:

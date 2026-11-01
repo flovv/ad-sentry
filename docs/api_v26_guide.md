@@ -72,3 +72,28 @@ WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
 > [!IMPORTANT]
 > The search insight query **never requests `metrics.cost_micros`**.
 > Google Ads search insight data is a categorized demand indicator and does not provide spend. PMax Sentry strictly prohibits subtracting search categories to derive brand/generic spend.
+
+### 4. Cross-Campaign Overlap Query (PMax + Demand Gen)
+
+When `--include-demand-gen` is enabled, the query expands to include `DEMAND_GEN` campaigns to diagnose auction collision on YouTube, Discover, and Gmail, and extract view-through conversions (`metrics.view_through_conversions`):
+
+```sql
+SELECT
+  campaign.id,
+  campaign.name,
+  campaign.advertising_channel_type,
+  segments.date,
+  segments.ad_network_type,
+  segments.ad_using_product_data,
+  segments.ad_using_video,
+  metrics.impressions,
+  metrics.clicks,
+  metrics.cost_micros,
+  metrics.conversions,
+  metrics.conversions_value,
+  metrics.view_through_conversions
+FROM campaign
+WHERE campaign.advertising_channel_type IN ('PERFORMANCE_MAX', 'DEMAND_GEN')
+  AND segments.date BETWEEN '{start_date}' AND '{end_date}'
+```
+

@@ -108,6 +108,67 @@ def generate_white_label_html_deck(
         </div>
         """
 
+    overlap_section = ""
+    if delivery_report.cross_campaign_overlap:
+        ov = delivery_report.cross_campaign_overlap
+        ov_rows = ""
+        for s in ov.surface_breakdown:
+            status_badge = (
+                '<span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">Collision</span>'
+                if s["is_shared"]
+                else '<span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">Isolated</span>'
+            )
+            ov_rows += f"""
+            <tr>
+              <td style="font-weight: 600;">{html.escape(s["channel"])}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{delivery_report.currency_code} {s["pmax_spend"]:,.2f}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{s["pmax_share"]:.1f}%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{delivery_report.currency_code} {s["demand_gen_spend"]:,.2f}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{s["demand_gen_share"]:.1f}%</td>
+              <td style="text-align: center;">{status_badge}</td>
+            </tr>
+            """
+        recs_list = "".join(f"<li>{html.escape(r)}</li>" for r in ov.recommendations)
+        sev_badge = (
+            '<span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">HIGH</span>'
+            if ov.overlap_severity == "HIGH"
+            else '<span class="badge" style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a;">MEDIUM</span>'
+            if ov.overlap_severity == "MEDIUM"
+            else '<span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">LOW</span>'
+        )
+        overlap_section = f"""
+        <div class="card">
+          <h2>Cross-Campaign Overlap & Inventory Collision (PMax vs. Demand Gen)</h2>
+          <div style="display: flex; gap: 2rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+            <div><strong>Inventory Overlap Severity:</strong> {sev_badge}</div>
+            <div><strong>PMax View-Through Share:</strong> {float(ov.pmax_view_through_ratio * 100):.1f}%</div>
+            <div><strong>Demand Gen View-Through Share:</strong> <strong style="color: #b91c1c;">{float(ov.demand_gen_view_through_ratio * 100):.1f}% (EVC)</strong></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Surface / Placement</th>
+                <th style="text-align: right;">PMax Spend</th>
+                <th style="text-align: right;">PMax Share</th>
+                <th style="text-align: right;">Demand Gen Spend</th>
+                <th style="text-align: right;">Demand Gen Share</th>
+                <th style="text-align: center;">Collision Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ov_rows}
+            </tbody>
+          </table>
+          <div class="notice">
+            <strong>Cross-Campaign Attribution Warning:</strong> High View-Through (Engaged-View) shares in Demand Gen indicate potential conversion inflation and double-attribution with subsequent PMax Search/Shopping touchpoints.
+          </div>
+          <h3 style="margin-top: 1rem;">Action Directives for Entanglement:</h3>
+          <ul>
+            {recs_list}
+          </ul>
+        </div>
+        """
+
     contract_section = ""
     if decision_contract:
         assumptions_html = "".join(f"<li>{html.escape(a)}</li>" for a in decision_contract.assumptions_and_limitations)
@@ -363,6 +424,7 @@ def generate_white_label_html_deck(
     </div>
 
     {search_insights_section}
+    {overlap_section}
     {contract_section}
 
     <div class="footer">

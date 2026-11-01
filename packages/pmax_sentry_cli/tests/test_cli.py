@@ -121,3 +121,26 @@ def test_cli_invalid_date_order():
     )
     assert result.exit_code != 0
     assert "cannot be after" in result.stdout
+
+
+def test_cli_report_include_demand_gen():
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "--customer-id",
+            "1234567890",
+            "--start-date",
+            "2026-10-01",
+            "--end-date",
+            "2026-10-05",
+            "--include-demand-gen",
+            "--format",
+            "terminal",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Cross-Campaign Overlap & Inventory Collision" in result.stdout
+    assert "COLLISION" in result.stdout
+    assert "Demand Gen View-Through Share" in result.stdout
+

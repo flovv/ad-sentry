@@ -11,11 +11,13 @@ from pmax_sentry_core.models import (
     BrandDiagnosticSummary,
     CampaignInfo,
     CoverageSummary,
+    CrossCampaignOverlapSummary,
     DeliveryReport,
     DeliveryRow,
     SearchInsightReport,
     SearchInsightRow,
 )
+from pmax_sentry_core.overlap import calculate_cross_campaign_overlap
 from pmax_sentry_core.reconciliation import reconcile_delivery
 
 logger = logging.getLogger("pmax_sentry.client")
@@ -26,6 +28,7 @@ GAQL_CAMPAIGN_TOTALS = """
 SELECT
   campaign.id,
   campaign.name,
+  campaign.advertising_channel_type,
   segments.date,
   metrics.impressions,
   metrics.clicks,
@@ -33,7 +36,7 @@ SELECT
   metrics.conversions,
   metrics.conversions_value
 FROM campaign
-WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+WHERE campaign.advertising_channel_type {channel_types_condition}
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
 """
 
@@ -41,6 +44,7 @@ GAQL_SEGMENTED_DELIVERY = """
 SELECT
   campaign.id,
   campaign.name,
+  campaign.advertising_channel_type,
   segments.date,
   segments.ad_network_type,
   segments.ad_using_product_data,
@@ -49,9 +53,10 @@ SELECT
   metrics.clicks,
   metrics.cost_micros,
   metrics.conversions,
-  metrics.conversions_value
+  metrics.conversions_value,
+  metrics.view_through_conversions
 FROM campaign
-WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+WHERE campaign.advertising_channel_type {channel_types_condition}
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
 """
 
@@ -83,22 +88,24 @@ class BaseGoogleAdsClient(ABC):
         pass
 
     @abstractmethod
-    def list_pmax_campaigns(self, customer_id: str) -> list[CampaignInfo]:
-        """Fetch all eligible PMax campaigns in customer account."""
+    def list_pmax_campaigns(
+        self, customer_id: str, include_demand_gen: bool = False
+    ) -> list[CampaignInfo]:
+        """Fetch all eligible PMax (and optionally Demand Gen) campaigns in customer account."""
         pass
 
     @abstractmethod
     def query_unsegmented_totals(
-        self, customer_id: str, start_date: date, end_date: date
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> int:
-        """Fetch unsegmented total cost_micros across all PMax campaigns for date range."""
+        """Fetch unsegmented total cost_micros across all PMax (and optionally Demand Gen) campaigns for date range."""
         pass
 
     @abstractmethod
     def query_segmented_delivery(
-        self, customer_id: str, start_date: date, end_date: date
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> list[DeliveryRow]:
-        """Fetch segmented PMax delivery records by channel and format flags."""
+        """Fetch segmented PMax (and optionally Demand Gen) delivery records by channel and format flags."""
         pass
 
     @abstractmethod
@@ -109,11 +116,19 @@ class BaseGoogleAdsClient(ABC):
         pass
 
     def build_delivery_report(
-        self, customer_id: str, start_date: date, end_date: date
+        self,
+        customer_id: str,
+        start_date: date,
+        end_date: date,
+        include_demand_gen: bool = False,
     ) -> DeliveryReport:
         account = self.get_account_info(customer_id)
-        segmented_rows = self.query_segmented_delivery(customer_id, start_date, end_date)
-        unsegmented_cost_micros = self.query_unsegmented_totals(customer_id, start_date, end_date)
+        segmented_rows = self.query_segmented_delivery(
+            customer_id, start_date, end_date, include_demand_gen=include_demand_gen
+        )
+        unsegmented_cost_micros = self.query_unsegmented_totals(
+            customer_id, start_date, end_date, include_demand_gen=include_demand_gen
+        )
 
         coverage = reconcile_delivery(segmented_rows, unsegmented_cost_micros)
         warnings: list[str] = []
@@ -124,6 +139,9 @@ class BaseGoogleAdsClient(ABC):
             )
         elif coverage.status == "UNAVAILABLE":
             warnings.append("Segmented delivery data is UNAVAILABLE for this customer/date range.")
+
+        overlap = calculate_cross_campaign_overlap(segmented_rows) if include_demand_gen else None
+        included_types = ["PERFORMANCE_MAX", "DEMAND_GEN"] if include_demand_gen else ["PERFORMANCE_MAX"]
 
         return DeliveryReport(
             schema_version="1.0.0",
@@ -137,6 +155,8 @@ class BaseGoogleAdsClient(ABC):
             rows=segmented_rows,
             coverage=coverage,
             warnings=warnings,
+            included_channel_types=included_types,
+            cross_campaign_overlap=overlap,
         )
 
     def build_search_insight_report(

@@ -47,12 +47,18 @@ def fetch_pmax_delivery(
     end_date: date,
     config_path: Path | str | None = None,
     client: BaseGoogleAdsClient | None = None,
+    include_demand_gen: bool = False,
 ) -> DeliveryReport:
     """
-    Public Python API to fetch and reconcile PMax delivery report for a customer account.
+    Public Python API to fetch and reconcile PMax (and optionally Demand Gen) delivery report.
     """
     c = _get_client(config_path=config_path, client=client)
-    return c.build_delivery_report(customer_id=customer_id, start_date=start_date, end_date=end_date)
+    return c.build_delivery_report(
+        customer_id=customer_id,
+        start_date=start_date,
+        end_date=end_date,
+        include_demand_gen=include_demand_gen,
+    )
 
 
 def fetch_search_insights(
@@ -79,12 +85,13 @@ def list_pmax_campaigns(
     customer_id: str,
     config_path: Path | str | None = None,
     client: BaseGoogleAdsClient | None = None,
+    include_demand_gen: bool = False,
 ) -> list[CampaignInfo]:
     """
-    Public Python API to list all PMax campaigns in the account.
+    Public Python API to list all PMax (and optionally Demand Gen) campaigns in the account.
     """
     c = _get_client(config_path=config_path, client=client)
-    return c.list_pmax_campaigns(customer_id)
+    return c.list_pmax_campaigns(customer_id, include_demand_gen=include_demand_gen)
 
 
 def get_account_info(

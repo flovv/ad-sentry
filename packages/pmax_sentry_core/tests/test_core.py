@@ -205,3 +205,22 @@ def test_search_insights_no_cost_and_brand_classification():
     csv_out = export_search_insight_csv(insights)
     assert "Brand Classifier Version:" in csv_out
     assert "Search Demand Insights Report" in csv_out
+
+
+def test_cross_campaign_overlap_with_demand_gen():
+    client = MockGoogleAdsClient()
+    report = client.build_delivery_report(
+        customer_id="1234567890",
+        start_date=date(2026, 10, 1),
+        end_date=date(2026, 10, 5),
+        include_demand_gen=True,
+    )
+    assert "DEMAND_GEN" in report.included_channel_types
+    assert report.cross_campaign_overlap is not None
+    ov = report.cross_campaign_overlap
+    assert ov.pmax_cost > Decimal(0)
+    assert ov.demand_gen_cost > Decimal(0)
+    assert ov.overlap_severity in ("HIGH", "MEDIUM")
+    assert ov.demand_gen_view_through_ratio > Decimal("0.3")
+    assert len(ov.recommendations) >= 2
+

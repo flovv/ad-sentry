@@ -28,12 +28,14 @@ from pmax_sentry_core.models import (
     CampaignInfo,
     CoverageStatus,
     CoverageSummary,
+    CrossCampaignOverlapSummary,
     DeliveryReport,
     DeliveryRow,
     EvidenceClass,
     SearchInsightReport,
     SearchInsightRow,
 )
+from pmax_sentry_core.overlap import calculate_cross_campaign_overlap
 from pmax_sentry_core.reconciliation import reconcile_delivery
 
 __all__ = [
@@ -43,6 +45,8 @@ __all__ = [
     "get_account_info",
     "DeliveryRow",
     "CoverageSummary",
+    "CrossCampaignOverlapSummary",
+    "calculate_cross_campaign_overlap",
     "DeliveryReport",
     "SearchInsightRow",
     "BrandDiagnosticSummary",

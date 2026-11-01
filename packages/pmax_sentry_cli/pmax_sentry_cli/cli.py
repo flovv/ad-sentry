@@ -78,10 +78,11 @@ def report_cmd(
     agency: str = typer.Option("Performance Marketing Agency", "--agency", help="Agency name for white-label deck"),
     brand: str = typer.Option("Client Brand", "--brand", help="Client brand name for white-label deck"),
     margin: Optional[float] = typer.Option(None, "--margin", "-m", help="Contribution margin rate (e.g. 0.35) for break-even hurdle"),
+    include_demand_gen: bool = typer.Option(False, "--include-demand-gen", "-dg", help="Include Demand Gen campaigns and run cross-campaign overlap audit"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Display account dry-run summary without fetching full report"),
     config: Optional[Path] = typer.Option(None, "--config", help="Path to google-ads.yaml config file"),
 ) -> None:
-    """Fetch and reconcile PMax reported delivery mix across channels and formats."""
+    """Fetch and reconcile PMax (and optionally Demand Gen) delivery mix across channels and formats."""
     s_date = _parse_date(start_date)
     e_date = _parse_date(end_date)
     if s_date > e_date:
@@ -90,13 +91,15 @@ def report_cmd(
 
     try:
         account = get_account_info(customer_id, config_path=config)
-        campaigns = list_pmax_campaigns(customer_id, config_path=config)
+        campaigns = list_pmax_campaigns(customer_id, config_path=config, include_demand_gen=include_demand_gen)
 
         if dry_run:
             render_dry_run_panel(account, campaigns, str(s_date), str(e_date), format)
             return
 
-        report = fetch_pmax_delivery(customer_id, s_date, e_date, config_path=config)
+        report = fetch_pmax_delivery(
+            customer_id, s_date, e_date, config_path=config, include_demand_gen=include_demand_gen
+        )
 
         # Handle White-Label Deck generation
         target_deck_path = deck or (output if format.lower() == "html" else None)

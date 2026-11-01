@@ -169,7 +169,44 @@ def render_delivery_report(report: DeliveryReport) -> None:
 
     console.print(Panel(cov_text, title="[bold]Reconciliation Audit[/bold]", border_style=status_color))
 
-    # 4. Mandatory Disclaimer (Spec 13)
+    # 4. Cross-Campaign Overlap (if Demand Gen included)
+    if report.cross_campaign_overlap:
+        ov = report.cross_campaign_overlap
+        ov_table = Table(
+            title="Cross-Campaign Overlap & Inventory Collision (PMax vs. Demand Gen)",
+            header_style="bold magenta",
+        )
+        ov_table.add_column("Channel / Surface", style="bold white")
+        ov_table.add_column("PMax Spend", justify="right", style="cyan")
+        ov_table.add_column("PMax Share", justify="right")
+        ov_table.add_column("Demand Gen Spend", justify="right", style="magenta")
+        ov_table.add_column("Demand Gen Share", justify="right")
+        ov_table.add_column("Collision Status", justify="center")
+
+        for s in ov.surface_breakdown:
+            status = "[bold red]COLLISION[/bold red]" if s["is_shared"] else "[dim]Isolated[/dim]"
+            ov_table.add_row(
+                s["channel"],
+                f"{report.currency_code} {s['pmax_spend']:,.2f}",
+                f"{s['pmax_share']:.1f}%",
+                f"{report.currency_code} {s['demand_gen_spend']:,.2f}",
+                f"{s['demand_gen_share']:.1f}%",
+                status,
+            )
+        console.print(ov_table)
+
+        sev_color = "red" if ov.overlap_severity == "HIGH" else "yellow" if ov.overlap_severity == "MEDIUM" else "green"
+        ov_text = Text()
+        ov_text.append(f"Overlap Severity:              [{sev_color}]{ov.overlap_severity}[/{sev_color}]\n", style="bold")
+        ov_text.append(f"PMax View-Through Share:       {ov.pmax_view_through_ratio:.1%} of attributed conversions\n")
+        ov_text.append(f"Demand Gen View-Through Share: {ov.demand_gen_view_through_ratio:.1%} of attributed conversions (EVC / passive views)\n\n", style="bold yellow" if ov.demand_gen_view_through_ratio > 0.3 else "")
+        ov_text.append("Strategic Directives:\n", style="bold")
+        for rec in ov.recommendations:
+            ov_text.append(f"- {rec}\n", style="cyan")
+
+        console.print(Panel(ov_text, title="[bold]Cross-Campaign Attribution & De-Duplication Audit[/bold]", border_style="magenta"))
+
+    # 5. Mandatory Disclaimer (Spec 13)
     disclaimer = Text(
         "This report shows reported PMax delivery by channel and format. "
         "Incrementality analysis needs business outcome data and a suitable measurement design.",

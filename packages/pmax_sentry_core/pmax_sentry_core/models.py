@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 from decimal import Decimal
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -21,8 +21,12 @@ class CoverageStatus(str, Enum):
 
 class DeliveryRow(BaseModel):
     customer_id: str = Field(..., description="Google Ads 10-digit customer ID")
-    campaign_id: str = Field(..., description="PMax Campaign ID")
-    campaign_name: str = Field(..., description="PMax Campaign Name")
+    campaign_id: str = Field(..., description="Campaign ID")
+    campaign_name: str = Field(..., description="Campaign Name")
+    advertising_channel_type: str = Field(
+        default="PERFORMANCE_MAX",
+        description="Advertising channel type: PERFORMANCE_MAX or DEMAND_GEN",
+    )
     date: dt.date = Field(..., description="Reporting date")
     channel: str = Field(
         ...,
@@ -42,6 +46,11 @@ class DeliveryRow(BaseModel):
     clicks: int = Field(..., ge=0, description="Click count")
     conversions: Decimal = Field(..., ge=0, description="Reported conversion count")
     conversion_value: Decimal = Field(..., ge=0, description="Reported conversion value in account currency")
+    view_through_conversions: Decimal = Field(
+        default=Decimal(0),
+        ge=0,
+        description="Reported view-through conversions (conversions following ad view without click)",
+    )
 
     @field_validator("customer_id")
     @classmethod
@@ -78,6 +87,18 @@ class CoverageSummary(BaseModel):
     reasons: list[str] = Field(default_factory=list, description="Explanations for partial or unavailable coverage.")
 
 
+class CrossCampaignOverlapSummary(BaseModel):
+    pmax_cost: Decimal
+    demand_gen_cost: Decimal
+    total_cost: Decimal
+    shared_surfaces: list[str] = Field(default_factory=lambda: ["YouTube", "Discover", "Gmail"])
+    surface_breakdown: list[dict[str, Any]] = Field(default_factory=list)
+    overlap_severity: Literal["NONE", "LOW", "MEDIUM", "HIGH"]
+    pmax_view_through_ratio: Decimal
+    demand_gen_view_through_ratio: Decimal
+    recommendations: list[str] = Field(default_factory=list)
+
+
 class DeliveryReport(BaseModel):
     schema_version: str = Field(default="1.0.0")
     api_version: str = Field(default="v26")
@@ -90,6 +111,8 @@ class DeliveryReport(BaseModel):
     rows: list[DeliveryRow] = Field(default_factory=list)
     coverage: CoverageSummary
     warnings: list[str] = Field(default_factory=list)
+    included_channel_types: list[str] = Field(default_factory=lambda: ["PERFORMANCE_MAX"])
+    cross_campaign_overlap: CrossCampaignOverlapSummary | None = None
 
     @field_validator("customer_id")
     @classmethod

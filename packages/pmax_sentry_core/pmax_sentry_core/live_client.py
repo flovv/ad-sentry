@@ -87,10 +87,17 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
             can_manage_clients=False,
         )
 
-    def list_pmax_campaigns(self, customer_id: str) -> list[CampaignInfo]:
+    def list_pmax_campaigns(
+        self, customer_id: str, include_demand_gen: bool = False
+    ) -> list[CampaignInfo]:
         cid = customer_id.replace("-", "").strip()
         ga_service = self._client.get_service("GoogleAdsService", version="v26")
-        query = """
+        channel_cond = (
+            "IN ('PERFORMANCE_MAX', 'DEMAND_GEN')"
+            if include_demand_gen
+            else "= 'PERFORMANCE_MAX'"
+        )
+        query = f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -99,7 +106,7 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
           campaign.bidding_strategy_type,
           campaign.maximize_conversion_value.target_roas
         FROM campaign
-        WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+        WHERE campaign.advertising_channel_type {channel_cond}
         ORDER BY campaign.id
         """
         response = ga_service.search(customer_id=cid, query=query)
@@ -107,6 +114,11 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
         for row in response:
             camp = row.campaign
             status_name = camp.status.name if hasattr(camp.status, "name") else str(camp.status)
+            channel_type_name = (
+                camp.advertising_channel_type.name
+                if hasattr(camp.advertising_channel_type, "name")
+                else str(camp.advertising_channel_type)
+            )
             strat_name = (
                 camp.bidding_strategy_type.name
                 if hasattr(camp.bidding_strategy_type, "name")
@@ -122,7 +134,7 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
                     id=str(camp.id),
                     name=camp.name,
                     status=status_name,
-                    advertising_channel_type="PERFORMANCE_MAX",
+                    advertising_channel_type=channel_type_name,
                     bidding_strategy_type=strat_name,
                     target_roas=target_roas,
                 )
@@ -130,12 +142,19 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
         return campaigns
 
     def query_unsegmented_totals(
-        self, customer_id: str, start_date: date, end_date: date
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> int:
         cid = customer_id.replace("-", "").strip()
         ga_service = self._client.get_service("GoogleAdsService", version="v26")
+        channel_cond = (
+            "IN ('PERFORMANCE_MAX', 'DEMAND_GEN')"
+            if include_demand_gen
+            else "= 'PERFORMANCE_MAX'"
+        )
         query = GAQL_CAMPAIGN_TOTALS.format(
-            start_date=start_date.isoformat(), end_date=end_date.isoformat()
+            channel_types_condition=channel_cond,
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
         )
         response = ga_service.search(customer_id=cid, query=query)
         total_cost_micros = 0
@@ -144,13 +163,20 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
         return total_cost_micros
 
     def query_segmented_delivery(
-        self, customer_id: str, start_date: date, end_date: date
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> list[DeliveryRow]:
         cid = customer_id.replace("-", "").strip()
         account = self.get_account_info(cid)
         ga_service = self._client.get_service("GoogleAdsService", version="v26")
+        channel_cond = (
+            "IN ('PERFORMANCE_MAX', 'DEMAND_GEN')"
+            if include_demand_gen
+            else "= 'PERFORMANCE_MAX'"
+        )
         query = GAQL_SEGMENTED_DELIVERY.format(
-            start_date=start_date.isoformat(), end_date=end_date.isoformat()
+            channel_types_condition=channel_cond,
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
         )
         response = ga_service.search(customer_id=cid, query=query)
         rows: list[DeliveryRow] = []
@@ -173,12 +199,19 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
                 "MAPS": "Maps",
             }
             clean_channel = channel_mapping.get(channel_val, channel_val.replace("_", " ").title())
+            ad_channel_type = (
+                row.campaign.advertising_channel_type.name
+                if hasattr(row.campaign.advertising_channel_type, "name")
+                else str(row.campaign.advertising_channel_type)
+            )
+            vt_conv = getattr(row.metrics, "view_through_conversions", 0)
 
             rows.append(
                 DeliveryRow(
                     customer_id=cid,
                     campaign_id=str(row.campaign.id),
                     campaign_name=row.campaign.name,
+                    advertising_channel_type=ad_channel_type,
                     date=date.fromisoformat(row.segments.date),
                     channel=clean_channel,
                     uses_product_data=getattr(row.segments, "ad_using_product_data", None),
@@ -189,6 +222,7 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
                     clicks=int(row.metrics.clicks),
                     conversions=Decimal(str(row.metrics.conversions)),
                     conversion_value=Decimal(str(row.metrics.conversions_value)),
+                    view_through_conversions=Decimal(str(vt_conv)),
                 )
             )
         return rows
