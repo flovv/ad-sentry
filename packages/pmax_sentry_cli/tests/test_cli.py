@@ -8,7 +8,8 @@ runner = CliRunner()
 def test_cli_version():
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
-    assert "pmax-audit v0.1.0" in result.stdout
+    assert "ad-audit" in result.stdout or "pmax-audit" in result.stdout
+    assert "v0.1.0" in result.stdout
     assert "v26" in result.stdout
 
 

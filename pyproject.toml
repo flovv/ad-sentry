@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pmax-sentry"
+name = "ad-sentry"
 version = "0.1.0"
-description = "Comprehensive Google Ads Performance Max, Demand Gen & Meta Advantage+ delivery observability, audit and incrementality measurement suite"
+description = "Independent black-box audit suite for Google PMax, Demand Gen & Meta Advantage+ AI advertising campaigns"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -13,13 +13,15 @@ authors = [
     { name = "Flo", email = "teschner@gmail.com" }
 ]
 keywords = [
-    "google-ads",
-    "performance-max",
+    "ad-audit",
     "pmax",
+    "performance-max",
     "meta-ads",
     "advantage-plus",
     "demand-gen",
-    "ad-audit",
+    "google-ads",
+    "zombie-products",
+    "creative-audit",
     "incrementality",
     "roas",
     "mcp",
@@ -63,15 +65,19 @@ dev = [
 ]
 
 [project.scripts]
+ad-audit = "pmax_sentry_cli.cli:app"
+ad-sentry = "pmax_sentry_cli.cli:app"
 pmax-audit = "pmax_sentry_cli.cli:app"
+ad-mcp = "pmax_sentry_mcp.server:main"
 pmax-mcp = "pmax_sentry_mcp.server:main"
 
 [project.urls]
-Homepage = "https://github.com/flovv/pmax-sentry"
-Documentation = "https://github.com/flovv/pmax-sentry#readme"
-Repository = "https://github.com/flovv/pmax-sentry.git"
-Issues = "https://github.com/flovv/pmax-sentry/issues"
-"Buy Agency Pro" = "https://polar.sh/pmax-sentry"
+Homepage = "https://github.com/flovv/ad-sentry"
+Documentation = "https://github.com/flovv/ad-sentry#readme"
+Repository = "https://github.com/flovv/ad-sentry.git"
+Issues = "https://github.com/flovv/ad-sentry/issues"
+"Buy Agency Pro" = "https://polar.sh/ad-sentry"
+
 
 [tool.setuptools]
 package-dir = { "" = ".", "pmax_sentry_core" = "packages/pmax_sentry_core/pmax_sentry_core", "pmax_sentry_cli" = "packages/pmax_sentry_cli/pmax_sentry_cli", "pmax_sentry_pro" = "packages/pmax_sentry_pro/pmax_sentry_pro", "pmax_sentry_mcp" = "packages/pmax_sentry_mcp/pmax_sentry_mcp" }

@@ -8,14 +8,18 @@ from typing import Any, Sequence
 
 from pmax_sentry_core.models import (
     AccountInfo,
+    AssetGroupAuditRow,
+    AssetGroupHealthReport,
     BrandDiagnosticSummary,
     CampaignInfo,
     CoverageSummary,
     CrossCampaignOverlapSummary,
     DeliveryReport,
     DeliveryRow,
+    ProductFeedAuditReport,
     SearchInsightReport,
     SearchInsightRow,
+    ZombieProductRow,
 )
 from pmax_sentry_core.overlap import calculate_cross_campaign_overlap
 from pmax_sentry_core.reconciliation import reconcile_delivery
@@ -115,12 +119,24 @@ class BaseGoogleAdsClient(ABC):
         """Fetch search-term category insights. NEVER requests cost metrics."""
         pass
 
+    def query_asset_groups(self, customer_id: str) -> AssetGroupHealthReport:
+        """Fetch and audit PMax asset group creative completeness, video format health, and audience signals."""
+        return AssetGroupHealthReport()
+
+    def query_product_feed(
+        self, customer_id: str, start_date: date, end_date: date
+    ) -> ProductFeedAuditReport:
+        """Fetch and audit Google Merchant Center product feed performance, classifying Zombie Products."""
+        return ProductFeedAuditReport()
+
     def build_delivery_report(
         self,
         customer_id: str,
         start_date: date,
         end_date: date,
         include_demand_gen: bool = False,
+        audit_assets: bool = True,
+        audit_feed: bool = True,
     ) -> DeliveryReport:
         account = self.get_account_info(customer_id)
         segmented_rows = self.query_segmented_delivery(
@@ -143,6 +159,9 @@ class BaseGoogleAdsClient(ABC):
         overlap = calculate_cross_campaign_overlap(segmented_rows) if include_demand_gen else None
         included_types = ["PERFORMANCE_MAX", "DEMAND_GEN"] if include_demand_gen else ["PERFORMANCE_MAX"]
 
+        asset_audit = self.query_asset_groups(customer_id) if audit_assets else None
+        feed_audit = self.query_product_feed(customer_id, start_date, end_date) if audit_feed else None
+
         return DeliveryReport(
             schema_version="1.0.0",
             api_version=self.api_version,
@@ -157,6 +176,8 @@ class BaseGoogleAdsClient(ABC):
             warnings=warnings,
             included_channel_types=included_types,
             cross_campaign_overlap=overlap,
+            asset_group_audit=asset_audit,
+            product_feed_audit=feed_audit,
         )
 
     def build_search_insight_report(

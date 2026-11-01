@@ -99,6 +99,72 @@ class CrossCampaignOverlapSummary(BaseModel):
     recommendations: list[str] = Field(default_factory=list)
 
 
+class AssetGroupAuditRow(BaseModel):
+    asset_group_id: str
+    asset_group_name: str
+    campaign_id: str
+    campaign_name: str
+    status: str = Field(default="ENABLED", description="ENABLED, PAUSED")
+    ad_strength: str = Field(default="GOOD", description="POOR, AVERAGE, GOOD, EXCELLENT")
+    headlines_count: int = Field(default=0, ge=0)
+    long_headlines_count: int = Field(default=0, ge=0)
+    descriptions_count: int = Field(default=0, ge=0)
+    images_count: int = Field(default=0, ge=0)
+    has_square_image: bool = True
+    has_landscape_image: bool = True
+    has_portrait_image: bool = False
+    videos_count: int = Field(default=0, ge=0)
+    has_vertical_video: bool = Field(
+        default=False,
+        description="Whether a 9:16 vertical video is provided. If False, Google auto-generates blurry slideshow video.",
+    )
+    search_themes_count: int = Field(default=0, ge=0)
+    has_audience_signals: bool = True
+    score: int = Field(..., ge=0, le=100, description="Health score from 0 (Critical) to 100 (Flawless)")
+    grade: str = Field(..., description="Letter grade: A+, A, B, C, D, F")
+    critical_issues: list[str] = Field(default_factory=list)
+    action_items: list[str] = Field(default_factory=list)
+
+
+class AssetGroupHealthReport(BaseModel):
+    total_asset_groups: int = 0
+    average_score: float = 0.0
+    overall_grade: str = "B"
+    missing_vertical_video_count: int = 0
+    missing_audience_signals_count: int = 0
+    asset_groups: list[AssetGroupAuditRow] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+
+
+class ZombieProductRow(BaseModel):
+    product_id: str = Field(..., description="Product SKU or Item ID")
+    title: str = Field(..., description="Product title in Merchant Center feed")
+    brand: str | None = None
+    cost: Decimal = Field(..., ge=0)
+    impressions: int = Field(default=0, ge=0)
+    clicks: int = Field(default=0, ge=0)
+    conversions: Decimal = Field(default=Decimal(0), ge=0)
+    conversion_value: Decimal = Field(default=Decimal(0), ge=0)
+    classification: Literal["TOP_PERFORMER", "LOW_MARGIN", "ZOMBIE", "GHOST"] = Field(
+        ...,
+        description="ZOMBIE = spend with 0 conversions; TOP_PERFORMER = high ROAS; GHOST = 0 impressions",
+    )
+    suggested_action: str
+
+
+class ProductFeedAuditReport(BaseModel):
+    total_products_audited: int = 0
+    total_feed_cost: Decimal = Decimal(0)
+    zombie_products_count: int = 0
+    zombie_spend: Decimal = Decimal(0)
+    zombie_spend_share: Decimal = Decimal(0)
+    top_performers_count: int = 0
+    ghost_products_count: int = 0
+    top_zombie_products: list[ZombieProductRow] = Field(default_factory=list)
+    estimated_monthly_savings: Decimal = Decimal(0)
+    action_plan: list[str] = Field(default_factory=list)
+
+
 class DeliveryReport(BaseModel):
     schema_version: str = Field(default="1.0.0")
     api_version: str = Field(default="v26")
@@ -113,6 +179,8 @@ class DeliveryReport(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     included_channel_types: list[str] = Field(default_factory=lambda: ["PERFORMANCE_MAX"])
     cross_campaign_overlap: CrossCampaignOverlapSummary | None = None
+    asset_group_audit: AssetGroupHealthReport | None = None
+    product_feed_audit: ProductFeedAuditReport | None = None
 
     @field_validator("customer_id")
     @classmethod

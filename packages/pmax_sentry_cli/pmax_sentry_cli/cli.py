@@ -29,8 +29,8 @@ from pmax_sentry_cli.license_cmd import app as license_app
 from pmax_sentry_cli.meta_cmd import app as meta_app
 
 app = typer.Typer(
-    name="pmax-audit",
-    help="Open-source Google Ads Performance Max delivery observability and reconciliation tool.",
+    name="ad-audit",
+    help="Ad Sentry — Independent Black-Box Audit Suite for Google PMax, Demand Gen & Meta Advantage+.",
     no_args_is_help=True,
 )
 app.add_typer(license_app, name="license")
@@ -47,8 +47,8 @@ def _parse_date(date_str: str) -> dt.date:
 
 @app.command("version")
 def version_cmd() -> None:
-    """Print pmax-audit version and target Google Ads API version."""
-    console.print(f"[bold cyan]pmax-audit[/bold cyan] v0.1.0 (Google Ads API: [bold green]{PINNED_API_VERSION}[/bold green])")
+    """Print ad-audit / pmax-audit version and target Google Ads API version."""
+    console.print(f"[bold cyan]ad-audit[/bold cyan] (pmax-audit) v0.1.0 (Google Ads API: [bold green]{PINNED_API_VERSION}[/bold green])")
 
 
 @app.command("campaigns")
@@ -81,10 +81,12 @@ def report_cmd(
     brand: str = typer.Option("Client Brand", "--brand", help="Client brand name for white-label deck"),
     margin: Optional[float] = typer.Option(None, "--margin", "-m", help="Contribution margin rate (e.g. 0.35) for break-even hurdle"),
     include_demand_gen: bool = typer.Option(False, "--include-demand-gen", "-dg", help="Include Demand Gen campaigns and run cross-campaign overlap audit"),
+    audit_assets: bool = typer.Option(True, "--audit-assets/--no-audit-assets", help="Audit PMax Asset Group creative completeness and video health"),
+    audit_feed: bool = typer.Option(True, "--audit-feed/--no-audit-feed", help="Audit Shopping feed and identify non-converting Zombie Products"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Display account dry-run summary without fetching full report"),
     config: Optional[Path] = typer.Option(None, "--config", help="Path to google-ads.yaml config file"),
 ) -> None:
-    """Fetch and reconcile PMax (and optionally Demand Gen) delivery mix across channels and formats."""
+    """Fetch and reconcile PMax (and optionally Demand Gen) delivery mix, asset groups, and product feed."""
     s_date = _parse_date(start_date)
     e_date = _parse_date(end_date)
     if s_date > e_date:
@@ -100,7 +102,13 @@ def report_cmd(
             return
 
         report = fetch_pmax_delivery(
-            customer_id, s_date, e_date, config_path=config, include_demand_gen=include_demand_gen
+            customer_id,
+            s_date,
+            e_date,
+            config_path=config,
+            include_demand_gen=include_demand_gen,
+            audit_assets=audit_assets,
+            audit_feed=audit_feed,
         )
 
         # Handle White-Label Deck generation

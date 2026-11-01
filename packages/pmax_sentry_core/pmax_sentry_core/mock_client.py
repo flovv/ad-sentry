@@ -7,9 +7,13 @@ import random
 from pmax_sentry_core.client import BaseGoogleAdsClient
 from pmax_sentry_core.models import (
     AccountInfo,
+    AssetGroupAuditRow,
+    AssetGroupHealthReport,
     CampaignInfo,
     DeliveryRow,
+    ProductFeedAuditReport,
     SearchInsightRow,
+    ZombieProductRow,
 )
 
 
@@ -264,3 +268,192 @@ class MockGoogleAdsClient(BaseGoogleAdsClient):
                     )
                 )
         return rows
+
+    def query_asset_groups(self, customer_id: str) -> AssetGroupHealthReport:
+        cid = customer_id.replace("-", "").strip()
+        if cid.startswith("4"):
+            return AssetGroupHealthReport()
+
+        ag1 = AssetGroupAuditRow(
+            asset_group_id="ag_101",
+            asset_group_name="Core Performance Collection",
+            campaign_id="10001",
+            campaign_name="PMax - Core Product Feed",
+            status="ENABLED",
+            ad_strength="EXCELLENT",
+            headlines_count=12,
+            long_headlines_count=4,
+            descriptions_count=4,
+            images_count=12,
+            has_square_image=True,
+            has_landscape_image=True,
+            has_portrait_image=True,
+            videos_count=4,
+            has_vertical_video=True,
+            search_themes_count=8,
+            has_audience_signals=True,
+            score=94,
+            grade="A+",
+            critical_issues=[],
+            action_items=["Asset coverage is optimal. Monitor search theme match rate and creative fatigue."],
+        )
+
+        ag2 = AssetGroupAuditRow(
+            asset_group_id="ag_102",
+            asset_group_name="Bestsellers & Promotion",
+            campaign_id="10002",
+            campaign_name="PMax - High Margin Assets",
+            status="ENABLED",
+            ad_strength="AVERAGE",
+            headlines_count=4,
+            long_headlines_count=2,
+            descriptions_count=2,
+            images_count=6,
+            has_square_image=True,
+            has_landscape_image=True,
+            has_portrait_image=False,
+            videos_count=1,
+            has_vertical_video=False,
+            search_themes_count=2,
+            has_audience_signals=True,
+            score=66,
+            grade="C",
+            critical_issues=[
+                "Missing 9:16 Vertical Video (Google auto-generates blurry slideshow video on Shorts)",
+                "Headlines below best-practice threshold (4/5 minimum)",
+            ],
+            action_items=[
+                "Upload high-resolution 9:16 vertical video immediately to capture premium Shorts CPMs",
+                "Add at least 3 distinct value-proposition headlines",
+            ],
+        )
+
+        ag3 = AssetGroupAuditRow(
+            asset_group_id="ag_103",
+            asset_group_name="Clearance & Outlet Items",
+            campaign_id="10001",
+            campaign_name="PMax - Core Product Feed",
+            status="ENABLED",
+            ad_strength="POOR",
+            headlines_count=3,
+            long_headlines_count=1,
+            descriptions_count=1,
+            images_count=2,
+            has_square_image=False,
+            has_landscape_image=True,
+            has_portrait_image=False,
+            videos_count=0,
+            has_vertical_video=False,
+            search_themes_count=0,
+            has_audience_signals=False,
+            score=38,
+            grade="F",
+            critical_issues=[
+                "Zero video assets uploaded (forfeiting YouTube and Shorts delivery)",
+                "Missing audience signals (algorithm exploring broadly without seed targets)",
+                "Missing 1:1 square image (limiting Display network formats)",
+            ],
+            action_items=[
+                "Attach Customer Match past-buyer list or Custom In-Market segment",
+                "Provide native video creative and 1:1 square assets",
+            ],
+        )
+
+        groups = [ag1, ag2, ag3]
+        avg_score = sum(g.score for g in groups) / len(groups)
+        overall_grade = "A" if avg_score >= 90 else "B" if avg_score >= 80 else "C" if avg_score >= 65 else "D" if avg_score >= 50 else "F"
+
+        return AssetGroupHealthReport(
+            total_asset_groups=len(groups),
+            average_score=round(avg_score, 1),
+            overall_grade=overall_grade,
+            missing_vertical_video_count=sum(1 for g in groups if not g.has_vertical_video),
+            missing_audience_signals_count=sum(1 for g in groups if not g.has_audience_signals),
+            asset_groups=groups,
+            recommendations=[
+                "Upload 9:16 vertical videos to eliminate low-quality auto-generated video on YouTube Shorts.",
+                "Enrich Clearance asset group with 1:1 square assets and audience signal seeds to stop algorithm wandering.",
+            ],
+        )
+
+    def query_product_feed(
+        self, customer_id: str, start_date: date, end_date: date
+    ) -> ProductFeedAuditReport:
+        cid = customer_id.replace("-", "").strip()
+        if cid.startswith("4"):
+            return ProductFeedAuditReport()
+
+        zombies = [
+            ZombieProductRow(
+                product_id="SKU-8821",
+                title="Pro Carbon Trail Running Poles (120cm)",
+                brand="TrailMaster",
+                cost=Decimal("420.00"),
+                impressions=18400,
+                clicks=310,
+                conversions=Decimal("0.0"),
+                conversion_value=Decimal("0.00"),
+                classification="ZOMBIE",
+                suggested_action="Exclude SKU or set Custom Label 0 = 'zombie' to immediately halt €420 budget bleed.",
+            ),
+            ZombieProductRow(
+                product_id="SKU-4910",
+                title="Gore-Tex Extreme Weather Winter Gaiters",
+                brand="AlpineEdge",
+                cost=Decimal("340.00"),
+                impressions=12200,
+                clicks=245,
+                conversions=Decimal("0.0"),
+                conversion_value=Decimal("0.00"),
+                classification="ZOMBIE",
+                suggested_action="Check landing page stock availability or lower Target ROAS threshold.",
+            ),
+            ZombieProductRow(
+                product_id="SKU-2104",
+                title="Ultralight Carbon Cycling Helmet (Matt Black)",
+                brand="AeroVelo",
+                cost=Decimal("295.00"),
+                impressions=9800,
+                clicks=190,
+                conversions=Decimal("0.0"),
+                conversion_value=Decimal("0.00"),
+                classification="ZOMBIE",
+                suggested_action="0 conversions in 30 days. Move to separate testing campaign with dedicated budget.",
+            ),
+            ZombieProductRow(
+                product_id="SKU-7731",
+                title="Hydration Running Vest 12L Navy",
+                brand="TrailMaster",
+                cost=Decimal("265.00"),
+                impressions=8400,
+                clicks=175,
+                conversions=Decimal("0.0"),
+                conversion_value=Decimal("0.00"),
+                classification="ZOMBIE",
+                suggested_action="Apply negative product filter in listing group to stop unrewarded spend.",
+            ),
+        ]
+
+        total_products = 184
+        total_cost = Decimal("14250.00")
+        zombie_count = 34
+        zombie_spend = Decimal("2720.00")
+        zombie_share = (zombie_spend / total_cost) * Decimal(100)
+
+        return ProductFeedAuditReport(
+            total_products_audited=total_products,
+            total_feed_cost=total_cost,
+            zombie_products_count=zombie_count,
+            zombie_spend=zombie_spend,
+            zombie_spend_share=round(zombie_share, 1),
+            top_performers_count=28,
+            ghost_products_count=122,
+            top_zombie_products=zombies,
+            estimated_monthly_savings=zombie_spend,
+            action_plan=[
+                f"Exclude or deprioritize {zombie_count} Zombie SKUs to immediately recover €{zombie_spend:,.2f}/mo (19.1% of feed spend).",
+                "Reallocate recovered budget into top 28 converting SKUs currently constrained by target ROAS bids.",
+                "Review 122 Ghost SKUs (0 spend) for Merchant Center policy disapprovals or bid under-competitiveness.",
+            ],
+        )
+

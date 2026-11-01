@@ -48,9 +48,12 @@ def fetch_pmax_delivery(
     config_path: Path | str | None = None,
     client: BaseGoogleAdsClient | None = None,
     include_demand_gen: bool = False,
+    audit_assets: bool = True,
+    audit_feed: bool = True,
 ) -> DeliveryReport:
     """
-    Public Python API to fetch and reconcile PMax (and optionally Demand Gen) delivery report.
+    Public Python API to fetch and reconcile PMax (and optionally Demand Gen) delivery report,
+    including Asset Group health grading and Product Feed zombie waste detection.
     """
     c = _get_client(config_path=config_path, client=client)
     return c.build_delivery_report(
@@ -58,7 +61,10 @@ def fetch_pmax_delivery(
         start_date=start_date,
         end_date=end_date,
         include_demand_gen=include_demand_gen,
+        audit_assets=audit_assets,
+        audit_feed=audit_feed,
     )
+
 
 
 def fetch_search_insights(

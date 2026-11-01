@@ -74,6 +74,197 @@ def generate_white_label_html_deck(
 
     reasons_html = "".join(f"<li>{html.escape(r)}</li>" for r in cov.reasons)
 
+    # Asset Group Quality Grader Section
+    asset_group_section = ""
+    if delivery_report.asset_group_audit and delivery_report.asset_group_audit.asset_groups:
+        aga = delivery_report.asset_group_audit
+        grade_badge_style = (
+            "background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;"
+            if aga.overall_grade in ("A+", "A")
+            else "background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;"
+            if aga.overall_grade == "B"
+            else "background: #fffbeb; color: #92400e; border: 1px solid #fde68a;"
+            if aga.overall_grade == "C"
+            else "background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;"
+        )
+
+        ag_rows_html = ""
+        for ag in aga.asset_groups:
+            str_style = (
+                "color: #065f46;" if ag.ad_strength == "EXCELLENT"
+                else "color: #1e40af;" if ag.ad_strength == "GOOD"
+                else "color: #92400e;" if ag.ad_strength == "AVERAGE"
+                else "color: #991b1b;"
+            )
+            v_badge = (
+                '<span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">Yes</span>'
+                if ag.has_vertical_video
+                else '<span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">MISSING (Junk Video Risk)</span>'
+            )
+            aud_badge = (
+                '<span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">Yes</span>'
+                if ag.has_audience_signals
+                else '<span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">NO SEED</span>'
+            )
+            issues_text = "; ".join(ag.critical_issues) if ag.critical_issues else "Flawless asset coverage"
+
+            ag_rows_html += f"""
+            <tr>
+              <td>
+                <strong>{html.escape(ag.asset_group_name)}</strong><br>
+                <span style="font-size: 0.75rem; color: #64748b;">{html.escape(ag.campaign_name)}</span>
+              </td>
+              <td style="text-align: center; font-weight: 600; {str_style}">{html.escape(ag.ad_strength)}</td>
+              <td style="text-align: center; font-variant-numeric: tabular-nums;">{ag.headlines_count}/15</td>
+              <td style="text-align: center; font-variant-numeric: tabular-nums;">{ag.images_count}</td>
+              <td style="text-align: center;">{v_badge}</td>
+              <td style="text-align: center;">{aud_badge}</td>
+              <td style="text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;">{ag.score}/100</td>
+              <td style="text-align: center;"><span class="badge" style="{grade_badge_style}">{html.escape(ag.grade)}</span></td>
+            </tr>
+            <tr>
+              <td colspan="8" style="background: #f8fafc; font-size: 0.8125rem; color: #475569; padding: 0.4rem 0.75rem;">
+                <strong>Issues & Action:</strong> {html.escape(issues_text)}
+              </td>
+            </tr>
+            """
+
+        ag_recs_html = "".join(f"<li>{html.escape(r)}</li>" for r in aga.recommendations)
+
+        asset_group_section = f"""
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Asset Group Creative Completeness & Quality Grader</h2>
+            <div>
+              <span style="font-size: 0.875rem; color: #64748b; margin-right: 0.5rem;">Overall Grade:</span>
+              <span class="badge" style="{grade_badge_style} font-size: 0.95rem; padding: 0.35rem 0.75rem;">{aga.overall_grade} ({aga.average_score:.1f}/100)</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Asset Groups Audited</div>
+              <div class="kpi-value" style="font-size: 1.4rem;">{aga.total_asset_groups}</div>
+              <div class="kpi-sub">PMax Creative Containers</div>
+            </div>
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Missing 9:16 Shorts Video</div>
+              <div class="kpi-value" style="font-size: 1.4rem; color: #b91c1c;">{aga.missing_vertical_video_count}</div>
+              <div class="kpi-sub">Triggers auto-generated junk video</div>
+            </div>
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Missing Audience Signals</div>
+              <div class="kpi-value" style="font-size: 1.4rem; color: #d97706;">{aga.missing_audience_signals_count}</div>
+              <div class="kpi-sub">Algorithm bidding unguided</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Asset Group</th>
+                <th style="text-align: center;">Ad Strength</th>
+                <th style="text-align: center;">Headlines</th>
+                <th style="text-align: center;">Images</th>
+                <th style="text-align: center;">9:16 Video</th>
+                <th style="text-align: center;">Audience Seed</th>
+                <th style="text-align: right;">Score</th>
+                <th style="text-align: center;">Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ag_rows_html}
+            </tbody>
+          </table>
+          <div class="notice">
+            <strong>Agency Insight:</strong> Performance Max requires dedicated 9:16 vertical videos. When missing, Google's algorithm auto-stitches existing images into blurry, low-resolution slideshow videos that inflate bounce rates on YouTube Shorts.
+          </div>
+          <h3 style="margin-top: 1rem;">Creative Optimization Directives:</h3>
+          <ul>
+            {ag_recs_html}
+          </ul>
+        </div>
+        """
+
+    # Product Feed Zombie Products Section
+    product_feed_section = ""
+    if delivery_report.product_feed_audit and delivery_report.product_feed_audit.total_products_audited > 0:
+        pfa = delivery_report.product_feed_audit
+        zombie_badge_style = (
+            "background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;"
+            if pfa.zombie_spend_share > 15
+            else "background: #fffbeb; color: #92400e; border: 1px solid #fde68a;"
+        )
+
+        zombie_rows_html = ""
+        for z in pfa.top_zombie_products:
+            zombie_rows_html += f"""
+            <tr>
+              <td style="font-family: monospace; font-size: 0.8125rem;">{html.escape(z.product_id)}</td>
+              <td><strong>{html.escape(z.title)}</strong><br><span style="color: #64748b; font-size: 0.75rem;">Brand: {html.escape(z.brand or 'Generic')}</span></td>
+              <td style="text-align: right; font-weight: 700; color: #b91c1c; font-variant-numeric: tabular-nums;">{delivery_report.currency_code} {z.cost:,.2f}</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">{z.clicks:,}</td>
+              <td style="text-align: center; color: #b91c1c; font-weight: 700;">0.0</td>
+              <td style="font-size: 0.8125rem; color: #334155;">{html.escape(z.suggested_action)}</td>
+            </tr>
+            """
+
+        feed_actions_html = "".join(f"<li>{html.escape(a)}</li>" for a in pfa.action_plan)
+
+        product_feed_section = f"""
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Shopping Feed & "Zombie Products" Waste Audit</h2>
+            <span class="badge" style="{zombie_badge_style} font-size: 0.9rem; padding: 0.35rem 0.75rem;">
+              {pfa.zombie_spend_share:.1f}% Budget Bleed
+            </span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Audited Feed SKUs</div>
+              <div class="kpi-value" style="font-size: 1.4rem;">{pfa.total_products_audited:,}</div>
+              <div class="kpi-sub">Merchant Center Feed</div>
+            </div>
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Zombie SKUs (0 Conv.)</div>
+              <div class="kpi-value" style="font-size: 1.4rem; color: #b91c1c;">{pfa.zombie_products_count}</div>
+              <div class="kpi-sub">{pfa.zombie_products_count / pfa.total_products_audited:.1%} of active catalog</div>
+            </div>
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Wasted Zombie Spend</div>
+              <div class="kpi-value" style="font-size: 1.4rem; color: #b91c1c;">{delivery_report.currency_code} {pfa.zombie_spend:,.2f}</div>
+              <div class="kpi-sub">{pfa.zombie_spend_share:.1f}% of entire feed spend</div>
+            </div>
+            <div class="kpi-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
+              <div class="kpi-label">Reclaimable Savings</div>
+              <div class="kpi-value" style="font-size: 1.4rem; color: #065f46;">{delivery_report.currency_code} {pfa.estimated_monthly_savings:,.2f}/mo</div>
+              <div class="kpi-sub">Immediate reallocation upside</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>SKU ID</th>
+                <th>Product Title</th>
+                <th style="text-align: right;">Wasted Spend</th>
+                <th style="text-align: right;">Clicks</th>
+                <th style="text-align: center;">Conversions</th>
+                <th>Agency Action Directive</th>
+              </tr>
+            </thead>
+            <tbody>
+              {zombie_rows_html}
+            </tbody>
+          </table>
+          <div class="notice">
+            <strong>Zombie SKU Mechanics:</strong> In standard PMax setups, non-converting products slowly siphon off 15–25% of total ad spend without meeting Target ROAS hurdles. Setting <code>Custom Label 0 = 'zombie'</code> or negative listing filters halts this waste immediately.
+          </div>
+          <h3 style="margin-top: 1rem;">Immediate Action Plan:</h3>
+          <ul>
+            {feed_actions_html}
+          </ul>
+        </div>
+        """
+
+
     search_insights_section = ""
     if search_insights and search_insights.rows:
         rows_si = ""
@@ -424,6 +615,8 @@ def generate_white_label_html_deck(
       </p>
     </div>
 
+    {asset_group_section}
+    {product_feed_section}
     {search_insights_section}
     {overlap_section}
     {contract_section}

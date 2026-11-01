@@ -37,6 +37,8 @@ from pmax_sentry_core.meta_models import (
 from pmax_sentry_core.mock_client import MockGoogleAdsClient
 from pmax_sentry_core.models import (
     AccountInfo,
+    AssetGroupAuditRow,
+    AssetGroupHealthReport,
     BrandDiagnosticSummary,
     CampaignInfo,
     CoverageStatus,
@@ -45,8 +47,10 @@ from pmax_sentry_core.models import (
     DeliveryReport,
     DeliveryRow,
     EvidenceClass,
+    ProductFeedAuditReport,
     SearchInsightReport,
     SearchInsightRow,
+    ZombieProductRow,
 )
 from pmax_sentry_core.overlap import calculate_cross_campaign_overlap
 from pmax_sentry_core.reconciliation import reconcile_delivery
@@ -60,6 +64,10 @@ __all__ = [
     "CoverageSummary",
     "CrossCampaignOverlapSummary",
     "calculate_cross_campaign_overlap",
+    "AssetGroupAuditRow",
+    "AssetGroupHealthReport",
+    "ZombieProductRow",
+    "ProductFeedAuditReport",
     "DeliveryReport",
     "SearchInsightRow",
     "BrandDiagnosticSummary",

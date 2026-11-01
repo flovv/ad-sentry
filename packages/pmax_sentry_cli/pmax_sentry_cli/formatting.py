@@ -8,8 +8,10 @@ from rich.text import Text
 
 from pmax_sentry_core.models import (
     AccountInfo,
+    AssetGroupHealthReport,
     CampaignInfo,
     DeliveryReport,
+    ProductFeedAuditReport,
     SearchInsightReport,
 )
 
@@ -206,13 +208,154 @@ def render_delivery_report(report: DeliveryReport) -> None:
 
         console.print(Panel(ov_text, title="[bold]Cross-Campaign Attribution & De-Duplication Audit[/bold]", border_style="magenta"))
 
-    # 5. Mandatory Disclaimer (Spec 13)
+    # 5. Asset Group Health Grader
+    if report.asset_group_audit and report.asset_group_audit.asset_groups:
+        render_asset_group_audit(report.asset_group_audit)
+
+    # 6. Product Feed Zombie Products Audit
+    if report.product_feed_audit and report.product_feed_audit.total_products_audited > 0:
+        render_product_feed_audit(report.product_feed_audit, report.currency_code)
+
+    # 7. Mandatory Disclaimer (Spec 13)
     disclaimer = Text(
         "This report shows reported PMax delivery by channel and format. "
         "Incrementality analysis needs business outcome data and a suitable measurement design.",
         style="italic cyan",
     )
     console.print(Panel(disclaimer, border_style="dim"))
+
+
+def render_asset_group_audit(report: AssetGroupHealthReport) -> None:
+    grade_color = (
+        "green"
+        if report.overall_grade in ("A+", "A")
+        else "cyan"
+        if report.overall_grade == "B"
+        else "yellow"
+        if report.overall_grade == "C"
+        else "red"
+    )
+
+    summary_text = Text()
+    summary_text.append(f"Overall Asset Health Grade: [{grade_color}]{report.overall_grade}[/{grade_color}] ", style="bold")
+    summary_text.append(f"(Average Score: {report.average_score:.1f}/100)\n", style="bold")
+    summary_text.append(f"Total Asset Groups:         {report.total_asset_groups}\n")
+    if report.missing_vertical_video_count > 0:
+        summary_text.append(
+            f"Missing 9:16 Shorts Video:  {report.missing_vertical_video_count} asset group(s) "
+            f"([WARN] Triggers low-quality auto-generated video on YouTube Shorts!)\n",
+            style="bold yellow",
+        )
+    if report.missing_audience_signals_count > 0:
+        summary_text.append(
+            f"Missing Audience Signals:   {report.missing_audience_signals_count} asset group(s) "
+            f"([WARN] Algorithm exploring blindly without 1st-party customer seed!)\n",
+            style="bold red",
+        )
+
+    for rec in report.recommendations:
+        summary_text.append(f"• {rec}\n", style="dim")
+
+    console.print(
+        Panel(
+            summary_text,
+            title="[bold blue]Asset Group Quality & Creative Completeness Grader[/bold blue]",
+            border_style=grade_color,
+        )
+    )
+
+    table = Table(
+        title="Asset Group Inspection & Scoring Breakdown",
+        header_style="bold blue",
+    )
+    table.add_column("Asset Group", style="bold white")
+    table.add_column("Campaign", style="dim")
+    table.add_column("Ad Strength", justify="center")
+    table.add_column("Headlines", justify="center")
+    table.add_column("Images", justify="center")
+    table.add_column("9:16 Video", justify="center")
+    table.add_column("Audience Seed", justify="center")
+    table.add_column("Score", justify="right")
+    table.add_column("Grade", justify="center")
+
+    for ag in report.asset_groups:
+        strength_style = "green" if ag.ad_strength == "EXCELLENT" else "cyan" if ag.ad_strength == "GOOD" else "yellow" if ag.ad_strength == "AVERAGE" else "red"
+        vert_str = "[green]Yes[/green]" if ag.has_vertical_video else "[bold red]MISSING[/bold red]"
+        aud_str = "[green]Yes[/green]" if ag.has_audience_signals else "[bold red]NONE[/bold red]"
+        grade_style = "bold green" if ag.grade in ("A+", "A") else "bold cyan" if ag.grade == "B" else "bold yellow" if ag.grade == "C" else "bold red"
+
+        table.add_row(
+            ag.asset_group_name,
+            ag.campaign_name,
+            f"[{strength_style}]{ag.ad_strength}[/{strength_style}]",
+            f"{ag.headlines_count}/15",
+            f"{ag.images_count}",
+            vert_str,
+            aud_str,
+            f"{ag.score}",
+            f"[{grade_style}]{ag.grade}[/{grade_style}]",
+        )
+
+    console.print(table)
+
+
+def render_product_feed_audit(report: ProductFeedAuditReport, currency_code: str = "EUR") -> None:
+    panel_color = "red" if report.zombie_spend_share > 15 else "yellow" if report.zombie_spend_share > 5 else "green"
+
+    summary_text = Text()
+    summary_text.append(f"Total Products Audited:     {report.total_products_audited:,} SKUs\n", style="bold")
+    summary_text.append(f"Total Feed Ad Spend:        {currency_code} {report.total_feed_cost:,.2f}\n")
+    summary_text.append(
+        f"Zombie Products (0 Conv):   [{panel_color}]{report.zombie_products_count} SKUs "
+        f"({report.zombie_products_count / report.total_products_audited:.1%} of catalog)[/{panel_color}]\n",
+        style="bold",
+    )
+    summary_text.append(
+        f"Wasted Zombie Spend:        [{panel_color}]{currency_code} {report.zombie_spend:,.2f} "
+        f"({report.zombie_spend_share:.1f}% of entire feed spend!)[/{panel_color}]\n",
+        style="bold",
+    )
+    summary_text.append(
+        f"Estimated Recovery Savings: [bold green]{currency_code} {report.estimated_monthly_savings:,.2f} / month[/bold green]\n\n"
+    )
+    summary_text.append("Action Directives:\n", style="bold")
+    for act in report.action_plan:
+        summary_text.append(f"• {act}\n", style="cyan")
+
+    console.print(
+        Panel(
+            summary_text,
+            title="[bold red]Shopping Feed Audit: 'Zombie Products' Waste Detection[/bold red]",
+            border_style=panel_color,
+        )
+    )
+
+    if report.top_zombie_products:
+        table = Table(
+            title="Top Non-Converting 'Zombie' SKUs (Immediate Budget Bleed)",
+            header_style="bold red",
+        )
+        table.add_column("SKU ID", style="bold cyan")
+        table.add_column("Product Title", style="white")
+        table.add_column("Brand", style="dim")
+        table.add_column("Wasted Spend", justify="right", style="bold yellow")
+        table.add_column("Clicks", justify="right")
+        table.add_column("Conv.", justify="center", style="bold red")
+        table.add_column("Action Recommendation", style="italic")
+
+        for z in report.top_zombie_products:
+            table.add_row(
+                z.product_id,
+                z.title[:42] + ("..." if len(z.title) > 42 else ""),
+                z.brand or "—",
+                f"{currency_code} {z.cost:,.2f}",
+                f"{z.clicks:,}",
+                "0.0",
+                z.suggested_action[:50] + ("..." if len(z.suggested_action) > 50 else ""),
+            )
+
+        console.print(table)
+
 
 
 def render_search_insights_report(report: SearchInsightReport) -> None:
