@@ -10,4 +10,5 @@ pmax_sentry_cli/__init__.py
 pmax_sentry_cli/cli.py
 pmax_sentry_cli/formatting.py
 pmax_sentry_cli/license_cmd.py
+pmax_sentry_cli/meta_cmd.py
 tests/test_cli.py

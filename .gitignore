@@ -12,11 +12,11 @@ htmlcov/
 .venv/
 polar_upload/dist/
 polar_upload/staging*/
-demo_pitch_deck.html
+*.html
 
 env/
 venv/
 polar_upload/dist/
 polar_upload/staging*/
-demo_pitch_deck.html
+*.html
 

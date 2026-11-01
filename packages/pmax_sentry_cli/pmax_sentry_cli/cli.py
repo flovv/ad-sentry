@@ -26,6 +26,7 @@ from pmax_sentry_cli.formatting import (
     render_search_insights_report,
 )
 from pmax_sentry_cli.license_cmd import app as license_app
+from pmax_sentry_cli.meta_cmd import app as meta_app
 
 app = typer.Typer(
     name="pmax-audit",
@@ -33,6 +34,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(license_app, name="license")
+app.add_typer(meta_app, name="meta")
 console = Console()
 
 

@@ -21,6 +21,19 @@ from pmax_sentry_core.exporters import (
     export_search_insight_csv,
     export_search_insight_json,
 )
+from pmax_sentry_core.meta_client import (
+    BaseMetaAdsClient,
+    MetaGraphApiClient,
+    MockMetaAdsClient,
+    fetch_meta_asc_audit,
+)
+from pmax_sentry_core.meta_models import (
+    MetaAscAuditReport,
+    MetaAttributionWindowSplit,
+    MetaAudienceCapAudit,
+    MetaCreativeFormatRow,
+    MetaPlacementRow,
+)
 from pmax_sentry_core.mock_client import MockGoogleAdsClient
 from pmax_sentry_core.models import (
     AccountInfo,
@@ -60,6 +73,15 @@ __all__ = [
     "export_delivery_report_json",
     "export_search_insight_csv",
     "export_search_insight_json",
+    "MetaPlacementRow",
+    "MetaAttributionWindowSplit",
+    "MetaAudienceCapAudit",
+    "MetaCreativeFormatRow",
+    "MetaAscAuditReport",
+    "BaseMetaAdsClient",
+    "MockMetaAdsClient",
+    "MetaGraphApiClient",
+    "fetch_meta_asc_audit",
     "BaseGoogleAdsClient",
     "MockGoogleAdsClient",
     "PINNED_API_VERSION",

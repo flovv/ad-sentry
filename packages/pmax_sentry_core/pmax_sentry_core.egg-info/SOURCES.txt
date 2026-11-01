@@ -5,6 +5,8 @@ pmax_sentry_core/api.py
 pmax_sentry_core/client.py
 pmax_sentry_core/exporters.py
 pmax_sentry_core/live_client.py
+pmax_sentry_core/meta_client.py
+pmax_sentry_core/meta_models.py
 pmax_sentry_core/mock_client.py
 pmax_sentry_core/models.py
 pmax_sentry_core/overlap.py
