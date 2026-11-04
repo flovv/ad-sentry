@@ -14,7 +14,7 @@ from pmax_sentry_pro._auth import verify_license, get_polar_org_id, ORG_ID_FILE
 app = typer.Typer(name="license", help="Manage PMax Sentry Pro license keys and subscription status.")
 console = Console()
 
-DEFAULT_POLAR_URL = "https://polar.sh/pmax-sentry"
+DEFAULT_POLAR_URL = "https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri"
 LICENSE_FILE = Path.home() / ".pmax_license_key"
 CHECKOUT_URL_FILE = Path.home() / ".pmax_polar_url"
 
@@ -109,23 +109,18 @@ def activate_cmd(
 
 @app.command("buy")
 def buy_cmd() -> None:
-    """Print checkout buy links for PMax Sentry Pro on Polar.sh."""
-    base_url = get_checkout_url()
+    """Print checkout buy links for Ad Sentry Pro on Polar.sh."""
+    checkout_url = get_checkout_url()
     text = Text()
-    text.append("PMax Sentry Pro - Official Polar.sh Checkout Tiers\n\n", style="bold white")
-    text.append("1. Single Audit Pass (149 EUR one-time):\n", style="bold yellow")
-    text.append("   - Single customer ID full audit & reconciliation\n")
+    text.append("Ad Sentry Pro - Official Polar.sh Checkout\n\n", style="bold white")
+    text.append("Agency Pro Subscription (149 EUR / month):\n", style="bold green")
+    text.append("   - Performance Max & Meta ASC Multi-Account Audit\n")
+    text.append("   - Creative Completeness Health Grader (0-100)\n")
+    text.append("   - Shopping Feed Zombie Products Waste Detector\n")
     text.append("   - Standalone White-Label HTML/PDF Pitch Deck\n")
-    text.append(f"   Buy Link: {base_url}/products/single-pass\n\n", style="cyan")
-
-    text.append("2. Agency Pro Retainer (149 EUR / month):\n", style="bold green")
-    text.append("   - Up to 50 client Google Ads accounts\n")
-    text.append("   - Unlimited White-Label Pitch Decks for new-business pitches\n")
-    text.append("   - Causal Experiment Design & Power Protocol Generator\n")
-    text.append("   - FastMCP server integration for Cursor & Claude Desktop\n")
-    text.append(f"   Buy Link: {base_url}/products/agency-pro\n\n", style="cyan")
-
-    text.append("Instant delivery: Polar.sh automatically generates your license key upon checkout.", style="dim")
+    text.append("   - FastMCP Server Integration for Cursor & Claude Desktop\n\n")
+    text.append(f"Checkout Link: {checkout_url}\n\n", style="bold cyan")
+    text.append("Instant delivery: Polar.sh automatically generates and emails your license key.", style="dim")
     console.print(Panel(text, title="[bold]Polar.sh Checkout[/bold]", border_style="blue"))
 
 

@@ -5,7 +5,7 @@
   <a href="https://pypi.org/project/ad-sentry/"><img src="https://img.shields.io/pypi/pyversions/ad-sentry.svg" alt="Python versions"></a>
   <a href="https://github.com/flovv/ad-sentry/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License"></a>
   <a href="https://developers.google.com/google-ads/api/docs/release-notes"><img src="https://img.shields.io/badge/Google%20Ads%20API-v26-green.svg" alt="Google Ads API v26"></a>
-  <a href="https://polar.sh/ad-sentry"><img src="https://img.shields.io/badge/Polar.sh-Agency%20Pro%20Store-blueviolet.svg" alt="Polar Store"></a>
+  <a href="https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri"><img src="https://img.shields.io/badge/Polar.sh-Agency%20Pro%20Store-blueviolet.svg" alt="Polar Store"></a>
   <a href="https://github.com/flovv/ad-sentry/actions"><img src="https://img.shields.io/badge/tests-60%20passed%20%7C%2081%25%20coverage-brightgreen.svg" alt="Tests"></a>
 </p>
 
@@ -136,7 +136,7 @@ The resulting standalone HTML files feature:
 
 Ad Sentry operates on an **Open-Core** model. The CLI, reconciliation algorithms, mock clients, and terminal/CSV/JSON reporting are 100% free and open-source under the Apache-2.0 license.
 
-To unlock White-Label HTML pitch decks, causal experiment designs, and multi-client agency features, licenses are available via [Polar.sh](https://polar.sh/ad-sentry):
+To unlock White-Label HTML pitch decks, causal experiment designs, and multi-client agency features, licenses are available via [Polar.sh](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri):
 
 | Feature | Open-Core (Free) | Single Audit Pass | Agency Pro Retainer |
 | :--- | :---: | :---: | :---: |
@@ -152,7 +152,7 @@ To unlock White-Label HTML pitch decks, causal experiment designs, and multi-cli
 | **Causal Experiment Designer (DiD)** | — | — | ✅ |
 | **Decision Contract Generator** | — | — | ✅ |
 | **Price** | **Free (OSS)** | **149 € one-time** | **149 € / month** |
-| **Direct Checkout** | — | [**Buy Single Pass**](https://polar.sh/ad-sentry/products/single-pass) | [**Subscribe Agency Pro**](https://polar.sh/ad-sentry/products/agency-pro) |
+| **Direct Checkout** | — | [**Buy Single Pass**](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri/products/single-pass) | [**Subscribe Agency Pro**](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri/products/agency-pro) |
 
 ### Activating Your License
 
@@ -245,4 +245,4 @@ pytest -v --cov
 ## 📄 License
 
 This project is licensed under the [Apache-2.0 License](LICENSE).
-Agency Pro features and commercial distribution benefits are managed via [Polar.sh](https://polar.sh/ad-sentry).
+Agency Pro features and commercial distribution benefits are managed via [Polar.sh](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri).

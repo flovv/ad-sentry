@@ -27,7 +27,7 @@ def get_polar_org_id() -> str:
                 return val
         except Exception:
             pass
-    return "org_pmax_sentry_production"
+    return "cf960093-fdd2-4be6-aaef-0db3d5005f77"
 
 
 TEST_KEYS = {
