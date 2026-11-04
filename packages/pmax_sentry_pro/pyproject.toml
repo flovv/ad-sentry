@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pmax-sentry-pro"
+version = "0.1.0"
+description = "Thin Python client library for hosted PMax Sentry Pro incrementality measurement service"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+dependencies = [
+    "pmax-sentry-core",
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pmax_sentry_pro*"]

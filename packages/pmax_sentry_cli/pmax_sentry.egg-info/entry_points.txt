@@ -1,0 +1,2 @@
+[console_scripts]
+pmax-audit = pmax_sentry_cli.cli:app

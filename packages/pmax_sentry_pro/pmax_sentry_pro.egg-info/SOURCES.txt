@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+pmax_sentry_pro/__init__.py
+pmax_sentry_pro/_auth.py
+pmax_sentry_pro/client.py
+pmax_sentry_pro/reporter.py
+pmax_sentry_pro.egg-info/PKG-INFO
+pmax_sentry_pro.egg-info/SOURCES.txt
+pmax_sentry_pro.egg-info/dependency_links.txt
+pmax_sentry_pro.egg-info/requires.txt
+pmax_sentry_pro.egg-info/top_level.txt

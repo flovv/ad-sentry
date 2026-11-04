@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: pmax-sentry-pro
+Version: 0.1.0
+Summary: Thin Python client library for hosted PMax Sentry Pro incrementality measurement service
+License: Proprietary
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pmax-sentry-core
+Requires-Dist: httpx>=0.24.0
+Requires-Dist: pydantic>=2.0.0
+
+# pmax-sentry-pro
+
+Thin Python client library for the hosted PMax Sentry Pro incrementality measurement service.
+Provides access to hosted OAuth account management, business outcome data ingestion, observational diagnostics, experiment power & planning, and decision contract retrieval.

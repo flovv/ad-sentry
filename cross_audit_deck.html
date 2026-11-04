@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PMax Delivery & Incrementality Audit — OmniRetail Group</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --primary: #2563eb; }
+    * { box-sizing: border-box; }
+    ::selection { background: #dbeafe; color: #1e3a8a; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      margin: 0;
+      padding: 2.5rem 1.5rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1040px; margin: 0 auto; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .agency-subtitle {
+      font-size: 0.875rem;
+      color: #475569;
+      margin-top: 0.35rem;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: #ffffff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }
+    .kpi-value {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-sub {
+      font-size: 0.8125rem;
+      color: #475569;
+      margin-top: 0.35rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .card {
+      background: #ffffff;
+      padding: 1.75rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #0f172a;
+      letter-spacing: -0.015em;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 0.75rem;
+    }
+    h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    p { color: #334155; font-size: 0.9375rem; }
+    ul { margin-top: 0.5rem; padding-left: 1.25rem; color: #334155; font-size: 0.9375rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 1.25rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.8125rem;
+      letter-spacing: 0.02em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .notice {
+      background: #fffbeb;
+      color: #78350f;
+      border: 1px solid #fde68a;
+      padding: 0.85rem 1.15rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin: 1.25rem 0;
+      line-height: 1.45;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: #475569;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 1.75rem;
+      margin-top: 3rem;
+    }
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .card, .kpi-card { box-shadow: none; border: 1px solid #cbd5e1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display: flex; align-items: center;">
+        
+        <div>
+          <h1 class="brand-title">OmniRetail Group — Performance Max Audit Deck</h1>
+          <div class="agency-subtitle">Prepared by Nexus Performance Media | Window: 2026-10-01 to 2026-10-30</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">API v26</span>
+        <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">COMPLETE</span>
+      </div>
+    </div>
+
+    <!-- Executive KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Audited Spend</div>
+        <div class="kpi-value">USD 1,199.88</div>
+        <div class="kpi-sub">140,420 imps | 2,344 clicks</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Attributed Value</div>
+        <div class="kpi-value">USD 2,782.73</div>
+        <div class="kpi-sub">35.4 reported conversions</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Platform ROAS</div>
+        <div class="kpi-value" style="color: #2563eb;">2.32x</div>
+        <div class="kpi-sub">Attributed Value / Ad Spend</div>
+      </div>
+      
+        <div class="kpi-card">
+          <div class="kpi-label">Break-Even Hurdle (1/μ)</div>
+          <div class="kpi-value" style="color: #4f46e5;">3.12x</div>
+          <div class="kpi-sub">Target Margin: 32.0%</div>
+        </div>
+        
+    </div>
+
+    <!-- Delivery Mix Table -->
+    <div class="card">
+      <h2>Reported Delivery Mix Across Channels</h2>
+      <p style="font-size: 0.9375rem; color: #475569; margin-bottom: 0;">
+        Delivery distribution segmented via supported Google Ads API channels. Format dimensions (product data & video) are evaluated orthogonally.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th style="text-align: right;">Spend</th>
+            <th style="text-align: right;">Share</th>
+            <th style="width: 30%;">Visual Distribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td style="font-weight: 600;">YouTube</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 387.54</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">32.3%</td>
+          <td>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 32.3%; border-radius: 4px;"></div>
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td style="font-weight: 600;">Google Search</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 350.67</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">29.2%</td>
+          <td>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 29.2%; border-radius: 4px;"></div>
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td style="font-weight: 600;">Discover</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 162.84</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">13.6%</td>
+          <td>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 13.6%; border-radius: 4px;"></div>
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td style="font-weight: 600;">Display</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 157.30</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">13.1%</td>
+          <td>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 13.1%; border-radius: 4px;"></div>
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td style="font-weight: 600;">Gmail</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 102.97</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">8.6%</td>
+          <td>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 8.6%; border-radius: 4px;"></div>
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td style="font-weight: 600;">Search Partners</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 38.56</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums;">3.2%</td>
+          <td>
+            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 8px; width: 100%;">
+              <div style="background: #2563eb; height: 100%; width: 3.2%; border-radius: 4px;"></div>
+            </div>
+          </td>
+        </tr>
+        
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Reconciliation Audit -->
+    <div class="card">
+      <h2>Account Reconciliation & Coverage Audit</h2>
+      <div style="display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <div><strong>Reconciliation Status:</strong> <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">COMPLETE</span></div>
+        <div><strong>Coverage Ratio:</strong> 1.0000</div>
+        <div><strong>Raw Difference:</strong> USD 0.00</div>
+      </div>
+      <ul>
+        <li>Segmented cost (1,199,878,659 micros) reconciles with total (1,199,878,659 micros) within 0.10% tolerance.</li>
+      </ul>
+      <p class="notice">
+        <strong>Measurement Discipline:</strong> Discrepancies between campaign totals and segmented reporting are preserved as unclassified differences. They are never hidden with artificial formulas and never assumed to belong to Display, Video, or waste.
+      </p>
+    </div>
+
+    
+        <div class="card">
+          <h2>Search Demand Insight Categories</h2>
+          <p class="notice"><strong>Demand Notice:</strong> Search categories reflect consumer search demand volume only; they do not contain ad cost or spend metrics.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Category Label</th>
+                <th style="text-align: right;">Clicks</th>
+                <th style="text-align: right;">Impressions</th>
+                <th style="text-align: right;">Search Volume</th>
+                <th style="text-align: right;">Conversions</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+            <tr>
+              <td>brand clothing</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">450</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">8,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">25,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">24.0</td>
+            </tr>
+            
+            <tr>
+              <td>acme official shoes</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">320</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5,600</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18.5</td>
+            </tr>
+            
+            <tr>
+              <td>running sneakers men</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">890</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">19,500</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">65,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32.0</td>
+            </tr>
+            
+            <tr>
+              <td>trail running shoes waterproof</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">410</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">9,800</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">14.0</td>
+            </tr>
+            
+            <tr>
+              <td>marathon accessories lightweight</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">210</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">4,300</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">14,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">6.0</td>
+            </tr>
+            
+            <tr>
+              <td>unclassified search terms</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">110</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">2,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">2.0</td>
+            </tr>
+            
+            <tr>
+              <td>brand clothing</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">450</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">8,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">25,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">24.0</td>
+            </tr>
+            
+            <tr>
+              <td>acme official shoes</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">320</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5,600</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">18.5</td>
+            </tr>
+            
+            <tr>
+              <td>running sneakers men</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">890</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">19,500</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">65,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32.0</td>
+            </tr>
+            
+            <tr>
+              <td>trail running shoes waterproof</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">410</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">9,800</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">32,000</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">14.0</td>
+            </tr>
+            
+            </tbody>
+          </table>
+        </div>
+        
+    
+        <div class="card">
+          <h2>Cross-Campaign Overlap & Inventory Collision (PMax vs. Demand Gen)</h2>
+          <div style="display: flex; gap: 2rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+            <div><strong>Inventory Overlap Severity:</strong> <span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">HIGH</span></div>
+            <div><strong>PMax View-Through Share:</strong> 3.3%</div>
+            <div><strong>Demand Gen View-Through Share:</strong> <strong style="color: #b91c1c;">60.8% (EVC)</strong></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Surface / Placement</th>
+                <th style="text-align: right;">PMax Spend</th>
+                <th style="text-align: right;">PMax Share</th>
+                <th style="text-align: right;">Demand Gen Spend</th>
+                <th style="text-align: right;">Demand Gen Share</th>
+                <th style="text-align: center;">Collision Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+            <tr>
+              <td style="font-weight: 600;">Discover</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 39.04</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5.0%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 123.80</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">29.6%</td>
+              <td style="text-align: center;"><span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">Collision</span></td>
+            </tr>
+            
+            <tr>
+              <td style="font-weight: 600;">Display</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 157.30</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">20.1%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 0.00</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">0.0%</td>
+              <td style="text-align: center;"><span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">Isolated</span></td>
+            </tr>
+            
+            <tr>
+              <td style="font-weight: 600;">Gmail</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 39.36</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">5.0%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 63.61</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">15.2%</td>
+              <td style="text-align: center;"><span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">Collision</span></td>
+            </tr>
+            
+            <tr>
+              <td style="font-weight: 600;">Google Search</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 350.67</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">44.9%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 0.00</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">0.0%</td>
+              <td style="text-align: center;"><span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">Isolated</span></td>
+            </tr>
+            
+            <tr>
+              <td style="font-weight: 600;">Search Partners</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 38.56</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">4.9%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 0.00</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">0.0%</td>
+              <td style="text-align: center;"><span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">Isolated</span></td>
+            </tr>
+            
+            <tr>
+              <td style="font-weight: 600;">YouTube</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 156.31</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">20.0%</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">USD 231.23</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">55.2%</td>
+              <td style="text-align: center;"><span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">Collision</span></td>
+            </tr>
+            
+            </tbody>
+          </table>
+          <div class="notice">
+            <strong>Cross-Campaign Attribution Warning:</strong> High View-Through (Engaged-View) shares in Demand Gen indicate potential conversion inflation and double-attribution with subsequent PMax Search/Shopping touchpoints.
+          </div>
+          <h3 style="margin-top: 1rem;">Action Directives for Entanglement:</h3>
+          <ul>
+            <li>High auction collision detected on shared surfaces (YouTube, Discover, Gmail). Demand Gen accounts for 418.64 while PMax spends 234.71 on identical placements.</li><li>Asset Specialization: Remove video assets from PMax to restrict it to a Feed-Only Shopping engine, delegating video storytelling exclusively to Demand Gen.</li><li>Demand Gen conversion reporting has a high View-Through/Engaged-View share (60.8%). High risk of double-attribution with subsequent PMax Search or direct brand conversions.</li><li>Audience Hygiene: Add Customer Match and 90-day site visitors as exclusions in Demand Gen to prevent bidding on warm audiences already captured in PMax.</li>
+          </ul>
+        </div>
+        
+    
+        <div class="card">
+          <h2>Decision Contract & Recommendations</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <strong>Contract ID:</strong> <code>cntr_e028ea216d09</code><br>
+              <strong>Evidence Class:</strong> <span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">EvidenceClass.REPORTED</span><br>
+              <strong>Recommendation:</strong> <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">REVIEW</span>
+            </div>
+            <div>
+              <strong>Valid Until:</strong> 2026-11-15<br>
+              <strong>Human Approval Required:</strong> Yes (Read-Only Guarantee)
+            </div>
+          </div>
+          <h3>Assumptions & Limitations</h3>
+          <ul>
+            <li>Data is platform-reported delivery only; does not infer incrementality, cannibalization, or waste.</li><li>Attributed conversion values depend on platform attribution models and conversion lag maturation.</li>
+          </ul>
+        </div>
+        
+
+    <div class="footer">
+      Generated with PMax Sentry Pro for Nexus Performance Media. Verified read-only execution. No live campaign mutations.
+    </div>
+  </div>
+</body>
+</html>

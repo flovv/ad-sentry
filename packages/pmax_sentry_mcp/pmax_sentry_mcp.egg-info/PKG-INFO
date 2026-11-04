@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: pmax-sentry-mcp
+Version: 0.1.0
+Summary: Read-only Model Context Protocol (MCP) server for PMax Sentry delivery audit and incrementality measurement
+License: Apache-2.0
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pmax-sentry-core
+Requires-Dist: mcp>=1.0.0
+
+# pmax-sentry-mcp
+
+Read-only Model Context Protocol (MCP) server for PMax Sentry.
+Exposes 11 deterministic tools for AI assistants to inspect PMax campaign delivery, run data quality preflights, evaluate experiment power, analyze causal experiments, and generate decision contracts.
+Contains NO campaign mutation or bid-writing tools.

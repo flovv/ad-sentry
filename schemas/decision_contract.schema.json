@@ -1,0 +1,433 @@
+{
+  "$defs": {
+    "EconomicHurdleResult": {
+      "properties": {
+        "contribution_margin_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Contribution margin rate before ad spend (mu)",
+          "title": "Contribution Margin Rate"
+        },
+        "breakeven_iroas": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Break-even incremental ROAS: 1 / mu",
+          "title": "Breakeven Iroas"
+        },
+        "formula": {
+          "default": "Break-even iROAS = 1 / mu",
+          "title": "Formula",
+          "type": "string"
+        },
+        "units": {
+          "default": "Incremental Revenue / Incremental Spend",
+          "title": "Units",
+          "type": "string"
+        },
+        "input_source": {
+          "default": "Advertiser-supplied contribution economics",
+          "title": "Input Source",
+          "type": "string"
+        },
+        "scenario_assumptions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Scenario Assumptions",
+          "type": "array"
+        },
+        "marginal_spend_guidance": {
+          "title": "Marginal Spend Guidance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contribution_margin_rate",
+        "breakeven_iroas",
+        "marginal_spend_guidance"
+      ],
+      "title": "EconomicHurdleResult",
+      "type": "object"
+    },
+    "EvidenceClass": {
+      "enum": [
+        "REPORTED",
+        "OBSERVATIONAL",
+        "EXPERIMENTAL"
+      ],
+      "title": "EvidenceClass",
+      "type": "string"
+    },
+    "ExperimentPlan": {
+      "properties": {
+        "plan_id": {
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "customer_id": {
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "design_type": {
+          "enum": [
+            "PLATFORM_NATIVE_SPLIT",
+            "GEO_BASED_STEP_TEST"
+          ],
+          "title": "Design Type",
+          "type": "string"
+        },
+        "estimand": {
+          "default": "Total incremental business revenue per incremental media dollar spent on PMax",
+          "title": "Estimand",
+          "type": "string"
+        },
+        "treatment_units": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatment Units",
+          "type": "array"
+        },
+        "control_units": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Control Units",
+          "type": "array"
+        },
+        "pre_period_days": {
+          "title": "Pre Period Days",
+          "type": "integer"
+        },
+        "test_period_days": {
+          "title": "Test Period Days",
+          "type": "integer"
+        },
+        "conversion_lag_maturation_days": {
+          "title": "Conversion Lag Maturation Days",
+          "type": "integer"
+        },
+        "power_mde_pct": {
+          "title": "Power Mde Pct",
+          "type": "number"
+        },
+        "alpha": {
+          "default": 0.05,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "power": {
+          "default": 0.8,
+          "title": "Power",
+          "type": "number"
+        },
+        "allowed_campaign_changes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Campaign Changes",
+          "type": "array"
+        },
+        "prohibited_campaign_changes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Prohibited Campaign Changes",
+          "type": "array"
+        },
+        "contamination_risks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Contamination Risks",
+          "type": "array"
+        },
+        "stop_conditions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Stop Conditions",
+          "type": "array"
+        },
+        "interpretation_limits": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Interpretation Limits",
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "customer_id",
+        "design_type",
+        "treatment_units",
+        "control_units",
+        "pre_period_days",
+        "test_period_days",
+        "conversion_lag_maturation_days",
+        "power_mde_pct",
+        "allowed_campaign_changes",
+        "prohibited_campaign_changes",
+        "contamination_risks",
+        "stop_conditions",
+        "interpretation_limits"
+      ],
+      "title": "ExperimentPlan",
+      "type": "object"
+    },
+    "UncertaintyInterval": {
+      "properties": {
+        "point_estimate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Point Estimate"
+        },
+        "ci_lower_95": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Ci Lower 95"
+        },
+        "ci_upper_95": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Ci Upper 95"
+        }
+      },
+      "required": [
+        "point_estimate",
+        "ci_lower_95",
+        "ci_upper_95"
+      ],
+      "title": "UncertaintyInterval",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "contract_version": {
+      "default": "1.0.0",
+      "description": "Semantic version of decision contract specification",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "contract_id": {
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "campaign_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Campaign Ids",
+      "type": "array"
+    },
+    "date_range": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "format": "date",
+          "type": "string"
+        }
+      ],
+      "title": "Date Range",
+      "type": "array"
+    },
+    "timezone": {
+      "title": "Timezone",
+      "type": "string"
+    },
+    "evidence_class": {
+      "$ref": "#/$defs/EvidenceClass"
+    },
+    "claim": {
+      "title": "Claim",
+      "type": "string"
+    },
+    "evidence_references": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence References",
+      "type": "array"
+    },
+    "reported_metrics": {
+      "additionalProperties": true,
+      "title": "Reported Metrics",
+      "type": "object"
+    },
+    "estimate_and_uncertainty_interval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UncertaintyInterval"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "model_version_and_diagnostics": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Version And Diagnostics"
+    },
+    "estimand_and_outcome_definition": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Estimand And Outcome Definition"
+    },
+    "experiment_design": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExperimentPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "power_mde_and_lag_treatment": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Power Mde And Lag Treatment"
+    },
+    "contribution_margin_and_breakeven_hurdle": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EconomicHurdleResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "assumptions_and_limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions And Limitations",
+      "type": "array"
+    },
+    "recommendation_type": {
+      "enum": [
+        "REVIEW",
+        "SCENARIO",
+        "EXPERIMENT",
+        "NO_ACTION"
+      ],
+      "title": "Recommendation Type",
+      "type": "string"
+    },
+    "approval_required": {
+      "const": true,
+      "default": true,
+      "title": "Approval Required",
+      "type": "boolean"
+    },
+    "valid_until": {
+      "format": "date",
+      "title": "Valid Until",
+      "type": "string"
+    },
+    "next_review_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Review Date"
+    },
+    "data_retention_reference": {
+      "default": "Data retention governed by customer workspace policy. Reporting records only; no live mutation capabilities.",
+      "title": "Data Retention Reference",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_id",
+    "customer_id",
+    "campaign_ids",
+    "date_range",
+    "timezone",
+    "evidence_class",
+    "claim",
+    "recommendation_type",
+    "valid_until"
+  ],
+  "title": "DecisionContract",
+  "type": "object"
+}

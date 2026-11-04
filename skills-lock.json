@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "pmax-delivery-audit": {
+      "source": "flovv/pmax-sentry",
+      "sourceType": "github",
+      "skillPath": "skills/pmax-delivery-audit/SKILL.md",
+      "computedHash": "7ca9a6e6afb1a4382da7d9ffde9621340f57b7816aaeb66505f8c97283d4e875"
+    }
+  }
+}

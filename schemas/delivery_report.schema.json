@@ -1,0 +1,253 @@
+{
+  "$defs": {
+    "CoverageSummary": {
+      "properties": {
+        "status": {
+          "enum": [
+            "COMPLETE",
+            "PARTIAL",
+            "UNAVAILABLE"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "segmented_cost_micros": {
+          "minimum": 0,
+          "title": "Segmented Cost Micros",
+          "type": "integer"
+        },
+        "unsegmented_cost_micros": {
+          "minimum": 0,
+          "title": "Unsegmented Cost Micros",
+          "type": "integer"
+        },
+        "difference_micros": {
+          "description": "Raw difference: unsegmented_cost_micros - segmented_cost_micros. Never hidden by max(0, diff).",
+          "title": "Difference Micros",
+          "type": "integer"
+        },
+        "coverage_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Segmented cost divided by unsegmented cost, or None if unsegmented is 0.",
+          "title": "Coverage Ratio"
+        },
+        "reasons": {
+          "description": "Explanations for partial or unavailable coverage.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "segmented_cost_micros",
+        "unsegmented_cost_micros",
+        "difference_micros"
+      ],
+      "title": "CoverageSummary",
+      "type": "object"
+    },
+    "DeliveryRow": {
+      "properties": {
+        "customer_id": {
+          "description": "Google Ads 10-digit customer ID",
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "campaign_id": {
+          "description": "PMax Campaign ID",
+          "title": "Campaign Id",
+          "type": "string"
+        },
+        "campaign_name": {
+          "description": "PMax Campaign Name",
+          "title": "Campaign Name",
+          "type": "string"
+        },
+        "date": {
+          "description": "Reporting date",
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "channel": {
+          "description": "Reported channel (e.g. Google Search, Search Partners, Display, YouTube, Discover, Gmail, Maps)",
+          "title": "Channel",
+          "type": "string"
+        },
+        "uses_product_data": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether the ad unit used merchant center product data",
+          "title": "Uses Product Data"
+        },
+        "uses_video": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether the ad unit used video assets",
+          "title": "Uses Video"
+        },
+        "currency_code": {
+          "description": "ISO 4217 3-letter currency code",
+          "maxLength": 3,
+          "minLength": 3,
+          "title": "Currency Code",
+          "type": "string"
+        },
+        "cost_micros": {
+          "description": "Cost in micros (1 unit = 1,000,000 micros)",
+          "minimum": 0,
+          "title": "Cost Micros",
+          "type": "integer"
+        },
+        "impressions": {
+          "description": "Impression count",
+          "minimum": 0,
+          "title": "Impressions",
+          "type": "integer"
+        },
+        "clicks": {
+          "description": "Click count",
+          "minimum": 0,
+          "title": "Clicks",
+          "type": "integer"
+        },
+        "conversions": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Reported conversion count",
+          "title": "Conversions"
+        },
+        "conversion_value": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Reported conversion value in account currency",
+          "title": "Conversion Value"
+        }
+      },
+      "required": [
+        "customer_id",
+        "campaign_id",
+        "campaign_name",
+        "date",
+        "channel",
+        "currency_code",
+        "cost_micros",
+        "impressions",
+        "clicks",
+        "conversions",
+        "conversion_value"
+      ],
+      "title": "DeliveryRow",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "api_version": {
+      "default": "v26",
+      "title": "Api Version",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "currency_code": {
+      "title": "Currency Code",
+      "type": "string"
+    },
+    "timezone": {
+      "title": "Timezone",
+      "type": "string"
+    },
+    "start_date": {
+      "format": "date",
+      "title": "Start Date",
+      "type": "string"
+    },
+    "end_date": {
+      "format": "date",
+      "title": "End Date",
+      "type": "string"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/DeliveryRow"
+      },
+      "title": "Rows",
+      "type": "array"
+    },
+    "coverage": {
+      "$ref": "#/$defs/CoverageSummary"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at",
+    "customer_id",
+    "currency_code",
+    "timezone",
+    "start_date",
+    "end_date",
+    "coverage"
+  ],
+  "title": "DeliveryReport",
+  "type": "object"
+}
