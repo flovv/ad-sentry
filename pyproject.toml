@@ -97,6 +97,12 @@ packages = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [
+    ".",
+    "packages/pmax_sentry_core",
+    "packages/pmax_sentry_cli",
+    "packages/pmax_sentry_pro",
+    "packages/pmax_sentry_mcp",
+]
 testpaths = ["tests", "packages"]
 
