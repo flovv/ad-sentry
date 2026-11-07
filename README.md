@@ -1,189 +1,209 @@
-# Ad Sentry — Independent Black-Box Audit Suite for AI Advertising
+# ad-sentry
 
-<p align="center">
-  <a href="https://pypi.org/project/ad-sentry/"><img src="https://img.shields.io/pypi/v/ad-sentry.svg" alt="PyPI version"></a>
-  <a href="https://pypi.org/project/ad-sentry/"><img src="https://img.shields.io/pypi/pyversions/ad-sentry.svg" alt="Python versions"></a>
-  <a href="https://github.com/flovv/ad-sentry/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License"></a>
-  <a href="https://developers.google.com/google-ads/api/docs/release-notes"><img src="https://img.shields.io/badge/Google%20Ads%20API-v26-green.svg" alt="Google Ads API v26"></a>
-  <a href="https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri"><img src="https://img.shields.io/badge/Polar.sh-Agency%20Pro%20Store-blueviolet.svg" alt="Polar Store"></a>
-  <a href="https://github.com/flovv/ad-sentry/actions"><img src="https://img.shields.io/badge/tests-60%20passed%20%7C%2081%25%20coverage-brightgreen.svg" alt="Tests"></a>
-</p>
+Independent audit suite for Google Ads Performance Max, Demand Gen, and Meta Advantage+ campaigns.
 
-**Ad Sentry** is an independent, mathematically rigorous advertising audit and delivery reconciliation engine for performance marketing teams and agencies.
+[![PyPI version](https://img.shields.io/pypi/v/ad-sentry.svg)](https://pypi.org/project/ad-sentry/)
+[![Python versions](https://img.shields.io/pypi/pyversions/ad-sentry.svg)](https://pypi.org/project/ad-sentry/)
+[![CI](https://github.com/flovv/ad-sentry/actions/workflows/ci.yml/badge.svg)](https://github.com/flovv/ad-sentry/actions)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-Interactive%20HTML%20Deck-success)](https://flovv.github.io/ad-sentry/)
 
-Automated AI ad platforms — **Google Performance Max**, **Google Demand Gen**, and **Meta Advantage+ Shopping (ASC)** — routinely obscure channel delivery splits, bleed spend into non-converting "Zombie Products", trigger blurry auto-generated video on YouTube Shorts, suffer cross-campaign inventory collisions, and report inflated vanity ROAS driven by view-through conversion credit.
+Ad Sentry is a command-line audit and delivery reconciliation tool for performance marketing teams and agencies. It extracts unaggregated delivery data from Google Ads and Meta Ads to identify budget waste, attribution inflation, and structural configuration issues.
 
-**Ad Sentry** cuts through black-box reporting to give advertisers and agencies full transparency, causal incrementality validation ($1/\mu$), and client-ready White-Label pitch decks.
+Live Demo: [https://flovv.github.io/ad-sentry/](https://flovv.github.io/ad-sentry/)
 
 ---
 
-## 🚀 The Omni-Channel Audit Trinity
+## Why Ad Sentry
 
+Automated ad formats (Google Performance Max, Google Demand Gen, and Meta Advantage+ Shopping) report blended top-line ROAS that obscures underlying inventory quality. Accounts running these formats frequently experience:
+
+1. **Unseen Display and Video Spend:** PMax blends high-intent Search and Shopping with low-intent Display Network and YouTube placements. Without channel-level decomposition, advertisers cannot see where margin is lost.
+2. **Zombie Products in Shopping Feeds:** A significant portion of ad spend (typically 15% to 25% of shopping budget) is consumed by products that receive clicks but generate zero conversions over 30 to 90 day windows.
+3. **Missing 9:16 Vertical Video:** When an asset group lacks a native vertical video, Google automatically generates low-resolution video slideshows for YouTube Shorts inventory, damaging brand perception and conversion rates.
+4. **Demand Gen Inventory Collisions:** Running Demand Gen alongside PMax without exclusion lists causes internal bidding overlap across YouTube in-stream and Discover feeds.
+5. **Attribution Over-Reporting (Meta ASC):** Meta Advantage+ Shopping blends view-through conversions into default ROAS and over-indexes on existing customers unless explicitly constrained.
+
+Ad Sentry operates in read-only mode, queries platform APIs directly, runs offline-first, and does not transmit data to external servers.
+
+---
+
+## Example Output
+
+Running a standard audit on a Performance Max campaign:
+
+```bash
+ad-audit report \
+  --customer-id 1234567890 \
+  --start-date 2026-10-01 \
+  --end-date 2026-10-31 \
+  --margin 0.40
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            AD SENTRY AUDIT MATRIX                           │
-├───────────────────────┬────────────────────────────┬────────────────────────┤
-│ Google PerformanceMax │ Google Demand Gen Overlap  │ Meta Advantage+ (ASC)  │
-├───────────────────────┼────────────────────────────┼────────────────────────┤
-│ • Channel x Format    │ • YouTube/Gmail/Discover   │ • Audience Network     │
-│   reconciliation      │   inventory collision      │   placement leakage    │
-│ • Asset Group Grader  │ • Engaged-View (EVC)       │ • 1-Day View vs Click  │
-│   (9:16 Shorts check) │   conversion de-duplication│   Ghost-ROAS isolation │
-│ • "Zombie Products"   │ • Multi-asset creative     │ • Existing customer    │
-│   shopping feed audit │   fatigue detection        │   budget cap audit     │
-│ • Pure search demand  │ • Cross-campaign reach     │ • Dynamic Product Ad   │
-│   (zero cost fabric.) │   cannibalization          │   vs Video format split│
-└───────────────────────┴────────────────────────────┴────────────────────────┘
+
+### 1. Channel Delivery Breakdown and Reconciliation
+
+```text
+Campaign: PMax - Core Products (ID: 9876543210)
+Window:   2026-10-01 to 2026-10-31 | Currency: USD
+Reported Total Cost: $1,562.82 | Attributed Value: $4,185.18 | Reported ROAS: 2.68x
+Break-Even Hurdle (1 / 0.40 margin): 2.50x ROAS -> Status: CLEARS HURDLE (+0.18x margin buffer)
+
+Channel x Format Split:
+-----------------------------------------------------------------------------------------
+Channel           Product Feed?  Video?      Spend   Share   Impr.  Clicks  Conv.   ROAS
+-----------------------------------------------------------------------------------------
+Google Search     Yes (Shopping) No        $544.15   34.8%   7,037     424   15.0  3.81x
+Display Network   Yes (Dynamic)  No        $236.85   15.2%  42,910     645    7.7  1.52x
+YouTube           No             Yes       $233.90   15.0%  42,520     639    7.6  1.80x
+Google Search     No (Text)      No        $156.40   10.0%   1,825     111    4.0  3.23x
+YouTube           Yes (Shoppable)Yes        $78.93    5.1%  12,410     186    2.5  2.43x
+Gmail             Yes            No         $78.71    5.0%  12,405     186    2.5  2.22x
+Discover          Yes            No         $78.27    5.0%  12,390     186    2.5  2.61x
+Display Network   No             No         $78.01    5.0%  12,380     186    2.5  1.20x
+Search Partners   No             No         $77.12    4.9%     992      62    2.5  2.08x
+-----------------------------------------------------------------------------------------
+Reconciliation: Segmented Cost ($1,562.82) == Total Cost ($1,562.82) | Discrepancy: $0.00 (100.0% coverage)
+```
+
+### 2. Asset Group Creative Health
+
+```text
+Asset Group: Clearance & Outlet Items (Ad Strength: POOR | Score: 38/100 | Grade: F)
+- Headlines: 3/15 (Insufficient copy variants)
+- Images: 2 (Missing 1:1 square and 4:5 portrait formats)
+- 9:16 Video: MISSING (Triggers low-quality automated video on YouTube Shorts)
+- Audience Signal Seed: None (Algorithm exploring without first-party customer seed)
+```
+
+### 3. Shopping Feed Zombie Product Detection
+
+```text
+Feed Analysis: 184 SKUs Audited | Total Feed Spend: $14,250.00
+Zombie SKUs (0 conversions): 34 SKUs (18.5% of catalog)
+Wasted Budget on Non-Converting SKUs: $2,720.00 (19.1% of feed spend)
+Immediate Action: Exclude 34 Zombie SKUs via Custom Label filter to recover $2,720.00/mo.
 ```
 
 ---
 
-## ⚡ Quickstart
+## Quickstart
 
 ### Installation
-
-Install the CLI tool and core suite directly from PyPI:
 
 ```bash
 pip install ad-sentry
 ```
 
-*(Note: `pip install pmax-sentry` also installs this suite for backward compatibility).*
+*(Note: `pip install pmax-sentry` is maintained as a backward-compatible alias).*
 
-Verify your installation:
+Verify installation:
 
 ```bash
 ad-audit version
-# or use the pmax-audit alias:
-pmax-audit version
 ```
+
+### Google Ads API Configuration
+
+Set your Google Ads credentials in a YAML file (`google-ads.yaml`) or via environment variables:
+
+```yaml
+developer_token: "INSERT_DEVELOPER_TOKEN"
+client_id: "INSERT_OAUTH_CLIENT_ID"
+client_secret: "INSERT_OAUTH_CLIENT_SECRET"
+refresh_token: "INSERT_REFRESH_TOKEN"
+use_proto_plus: true
+```
+
+If no configuration file is present, `ad-audit` automatically uses built-in realistic mock data so you can test features immediately.
 
 ---
 
-## 📊 Core Audit Capabilities
+## Commands
 
-### 1. Google Performance Max: Reconciliation, Asset Grader & Zombie Products
-Audit delivery across Google Search, Display, YouTube, Discover, Gmail, and Maps while grading creative completeness and detecting non-converting shopping feed SKUs:
-
-```bash
-ad-audit report --customer-id 1234567890 --start-date 2026-10-01 --end-date 2026-10-31 --margin 0.40
-```
-
-Terminal output delivers 4 forensic audits in seconds:
-- **Delivery Mix Reconciliation:** Segmented channel spend reconciled against total unsegmented campaign cost (Google Ads API v26).
-- **Asset Group Grader (Score 0–100 / Grade A+ to F):** Audits headline depth, image ratios, and flags missing 9:16 vertical videos that trigger Google's low-quality auto-generated slideshow video on YouTube Shorts.
-- **"Zombie Products" Shopping Waste:** Pinpoints products spending budget with zero conversions, calculates total cash bleed (often 15–25% of feed spend), and provides negative filter rules.
-- **Economic Hurdle ($1/\mu$):** Reconciles reported ROAS against the advertiser's contribution margin break-even hurdle.
-
-### 2. Cross-Campaign Overlap (PMax + Demand Gen)
-Detect inventory collisions across YouTube in-stream, Discover feed, and Gmail between PMax and Demand Gen campaigns:
-
-```bash
-ad-audit report --customer-id 1234567890 --include-demand-gen --start-date 2026-10-01 --end-date 2026-10-31
-```
-
-### 3. Meta Advantage+ Shopping (ASC) Audit
-Audit Audience Network budget leakage, isolate View-Through Ghost ROAS, and test Existing Customer Budget Cap compliance:
-
-```bash
-ad-audit meta report --account-id act_1234567890 --start-date 2026-10-01 --end-date 2026-10-31 --margin 0.40
-```
-
-### 4. Search Demand Category Insights
-Categorize search term intent (Brand vs Generic) with zero fabricated spend:
-
-```bash
-ad-audit insights --customer-id 1234567890 --start-date 2026-10-01 --end-date 2026-10-31 -b "yourbrand"
-```
-
----
-
-## 💼 Agency Pro: Standalone White-Label Pitch Decks
-
-Agencies use Ad Sentry to turn raw audit findings into beautiful, client-ready presentation pitch decks that win **\$2,000–\$10,000/month** management retainers.
-
-Generate a standalone HTML pitch deck ready for client presentations:
+### 1. Performance Max Audit
 
 ```bash
 ad-audit report \
   --customer-id 1234567890 \
-  --margin 0.42 \
-  --include-demand-gen \
-  --deck client_audit_deck.html \
-  --agency "Acme Growth Media" \
-  --brand "Prospect Brand"
+  --start-date 2026-10-01 \
+  --end-date 2026-10-31 \
+  --margin 0.40
 ```
+
+Options:
+- `--margin / -m <float>`: Advertiser gross margin rate (e.g. 0.40 for 40%) used to compute the break-even hurdle (1 / mu).
+- `--include-demand-gen / -dg`: Include Demand Gen campaigns and check for cross-campaign inventory collisions.
+- `--no-audit-assets`: Skip asset group creative scoring.
+- `--no-audit-feed`: Skip shopping feed zombie SKU inspection.
+- `--format / -f <terminal|csv|json>`: Output format (default: terminal).
+- `--output / -o <path>`: Write report to a file.
+
+### 2. Meta Advantage+ Shopping (ASC) Audit
 
 ```bash
 ad-audit meta report \
   --account-id act_1234567890 \
-  --margin 0.40 \
-  --deck meta_pitch_deck.html \
-  --agency "Acme Growth Media" \
-  --brand "Prospect Brand"
+  --start-date 2026-10-01 \
+  --end-date 2026-10-31 \
+  --margin 0.40
 ```
 
-The resulting standalone HTML files feature:
-- 🎨 **Impeccable craft styling:** High-contrast, executive dark-mode typography and responsive data cards.
-- 🎯 **Asset Group Quality Grader:** Visual progress bars for asset health and YouTube Shorts risk callouts.
-- 🧟 **Zombie SKU Breakdown:** Itemized table showing the exact budget wasted on non-converting products.
-- 📐 **Econometric Hurdle Reconciliation:** Explicitly checks whether click ROAS clears the true contribution margin threshold ($1/\mu$).
-- 🛡️ **100% Local & Privacy Compliant:** Zero client data sent to third-party cloud servers. GDPR-safe and printable to PDF via browser `Ctrl+P`.
+Audits:
+- Audience Network spend leakage.
+- Click-through ROAS vs 1-day view-through attribution inflation.
+- Existing customer budget cap compliance.
+- Dynamic Product Ad (DPA) catalog versus standalone creative split.
 
----
-
-## 💳 Pricing & License Tiers
-
-Ad Sentry operates on an **Open-Core** model. The CLI, reconciliation algorithms, mock clients, and terminal/CSV/JSON reporting are 100% free and open-source under the Apache-2.0 license.
-
-To unlock White-Label HTML pitch decks, causal experiment designs, and multi-client agency features, licenses are available via [Polar.sh](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri):
-
-| Feature | Open-Core (Free) | Single Audit Pass | Agency Pro Retainer |
-| :--- | :---: | :---: | :---: |
-| **PMax Channel Reconciliation** | ✅ | ✅ | ✅ |
-| **Asset Group Quality Grader** | ✅ | ✅ | ✅ |
-| **"Zombie Products" Waste Detector** | ✅ | ✅ | ✅ |
-| **Demand Gen Inventory Overlap** | ✅ | ✅ | ✅ |
-| **Meta Advantage+ Leakage Audit** | ✅ | ✅ | ✅ |
-| **Terminal, CSV, JSON Exporters** | ✅ | ✅ | ✅ |
-| **FastMCP Server for AI Agents** | ✅ | ✅ | ✅ |
-| **White-Label Pitch Decks (HTML)** | — | ✅ (1 Account) | ✅ (Unlimited) |
-| **Client Account Capacity** | Unlimited (Local) | 1 Account | Up to 50 Accounts |
-| **Causal Experiment Designer (DiD)** | — | — | ✅ |
-| **Decision Contract Generator** | — | — | ✅ |
-| **Price** | **Free (OSS)** | **149 € one-time** | **149 € / month** |
-| **Direct Checkout** | — | [**Buy Single Pass**](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri/products/single-pass) | [**Subscribe Agency Pro**](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri/products/agency-pro) |
-
-### Activating Your License
+### 3. Search Demand Insights
 
 ```bash
-# Check available checkout tiers
-ad-audit license buy
-
-# Activate your key instantly
-ad-audit license activate <YOUR_POLAR_KEY>
-
-# Verify active status
-ad-audit license status
+ad-audit insights \
+  --customer-id 1234567890 \
+  --start-date 2026-10-01 \
+  --end-date 2026-10-31 \
+  --brand "yourbrand"
 ```
+
+Categorizes search term volume into Brand vs Generic without fabricating non-existent cost metrics (Google Ads API v26 does not expose cost at the search category level).
+
+### 4. White-Label HTML Pitch Decks (Agency Pro)
+
+Export a standalone, self-contained HTML presentation deck:
+
+```bash
+ad-audit report \
+  --customer-id 1234567890 \
+  --start-date 2026-10-01 \
+  --end-date 2026-10-31 \
+  --margin 0.40 \
+  --deck client_audit_deck.html \
+  --agency "Acme Media" \
+  --brand "Client Brand"
+```
+
+View the live sample deck: [https://flovv.github.io/ad-sentry/](https://flovv.github.io/ad-sentry/)
+
+Features of the generated HTML deck:
+- Single-file HTML with embedded SVG charts and responsive executive styling.
+- Printable to PDF via browser print (Ctrl+P / Cmd+P).
+- Asset group creative completeness table and zombie SKU breakdown.
+- Zero external tracking scripts or client data transmission.
 
 ---
 
-## 🤖 Model Context Protocol (MCP) for AI Agents
+## Model Context Protocol (MCP) Server
 
-Ad Sentry includes a native Model Context Protocol (MCP) server. Run audits directly inside **Claude Desktop**, **Cursor**, or **Antigravity**.
+Ad Sentry includes a built-in FastMCP server for use with Claude Desktop, Cursor, and other AI agent workflows.
 
-Launch the server:
+Start the MCP server:
 
 ```bash
 ad-mcp
-# or alias:
-pmax-mcp
 ```
 
-### Claude Desktop Configuration
+### Claude Desktop Setup
 
-Add to your `claude_desktop_config.json`:
+Add to `claude_desktop_config.json`:
 
 ```json
 {
@@ -195,9 +215,9 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-### Cursor Configuration
+### Cursor Setup
 
-Add to your `.cursor/mcp.json`:
+Add to `.cursor/mcp.json`:
 
 ```json
 {
@@ -209,40 +229,73 @@ Add to your `.cursor/mcp.json`:
 }
 ```
 
----
-
-## 📐 Econometric Framework
-
-Ad Sentry enforces strict evidence discipline:
-
-1. **Break-Even Hurdle:**
-   $$\text{Hurdle} = \frac{1}{\mu}$$
-   where $\mu$ is the advertiser's gross contribution margin rate (e.g. at 40% margin, hurdle = 2.50x ROAS). Any campaign claiming profitability below this hurdle is losing operating margin on every sale.
-2. **Ghost ROAS Isolation:**
-   $$\text{Reported ROAS} = \frac{\text{Click Value} + \text{1-Day View Value}}{\text{Spend}}$$
-   $$\text{True Click ROAS} = \frac{\text{Click Value}}{\text{Spend}}$$
-3. **Strict Coverage Preservation:**
-   Unsegmented campaign spend totals are preserved. Unmatched spend is reported as raw coverage discrepancy — never arbitrarily labeled "Display waste" or "Video".
+Available tools exposed via MCP:
+- `list_customers`: List accessible customer accounts.
+- `list_campaigns`: List PMax and Demand Gen campaigns.
+- `delivery_report`: Channel and format delivery reconciliation.
+- `search_insights`: Search demand classification.
+- `calculate_hurdle`: Contribution margin break-even hurdle calculation.
+- `propose_experiment_design`: Difference-in-Differences power analysis and design protocol.
 
 ---
 
-## 🧪 Development & Testing
+## Methodology and Economics
+
+### Break-Even ROAS Hurdle
+
+$$\text{Hurdle} = \frac{1}{\mu}$$
+
+Where $\mu$ is the advertiser's gross contribution margin rate. For example, at a 40% margin ($\mu = 0.40$), the minimum break-even ROAS is $1 / 0.40 = 2.50\text{x}$. Any campaign reporting ROAS below 2.50x produces a negative net profit on every attributed transaction, regardless of top-line revenue volume.
+
+### View-Through Attribution Isolation
+
+Meta and Google automated campaigns frequently inflate reported performance by including view-through conversions where a user saw an ad but never clicked:
+
+$$\text{Reported ROAS} = \frac{\text{Click-Through Revenue} + \text{View-Through Revenue}}{\text{Spend}}$$
+
+$$\text{Click ROAS} = \frac{\text{Click-Through Revenue}}{\text{Spend}}$$
+
+Ad Sentry separates click-through conversions from view-through conversions to evaluate real commercial demand.
+
+### Reconciliation Coverage
+
+Platform APIs frequently present discrepancies between aggregated campaign totals and segmented dimensions. Ad Sentry computes the exact difference:
+
+$$\text{Coverage Discrepancy} = \text{Total Campaign Cost} - \sum \text{Segmented Channel Costs}$$
+
+If coverage discrepancy is non-zero, it is reported as an unmapped variance rather than arbitrarily attributed to Display or Video.
+
+---
+
+## Commercial Licensing
+
+Ad Sentry is open-core. Core CLI tools, reconciliation algorithms, terminal reporting, and CSV/JSON exports are free under the Apache-2.0 license.
+
+White-Label HTML deck generation and multi-client agency features require an Agency Pro subscription:
+
+- Subscription: [Polar.sh Checkout](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri)
+- Activate a key:
+  ```bash
+  ad-audit license activate <YOUR_POLAR_KEY>
+  ```
+- Check license status:
+  ```bash
+  ad-audit license status
+  ```
+
+---
+
+## Development
 
 ```bash
-# Clone the repository
 git clone https://github.com/flovv/ad-sentry.git
 cd ad-sentry
-
-# Install dependencies in editable mode
 pip install -e ".[dev,all]"
-
-# Run full test suite with coverage
-pytest -v --cov
+pytest -v
 ```
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the [Apache-2.0 License](LICENSE).
-Agency Pro features and commercial distribution benefits are managed via [Polar.sh](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri).
+Apache-2.0. Commercial agency features powered by [Polar.sh](https://buy.polar.sh/polar_cl_vVpyPjGk5be8auvK5NLymklKYgDqjXB4iVec01V9sri).

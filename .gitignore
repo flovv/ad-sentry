@@ -10,13 +10,9 @@ build/
 htmlcov/
 .env
 .venv/
-polar_upload/dist/
-polar_upload/staging*/
-*.html
-
 env/
 venv/
 polar_upload/dist/
 polar_upload/staging*/
 *.html
-
+!docs/*.html
