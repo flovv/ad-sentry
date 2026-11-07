@@ -145,3 +145,85 @@ def test_cli_report_include_demand_gen():
     assert "COLLISION" in result.stdout
     assert "Demand Gen View-Through Share" in result.stdout
 
+
+
+def test_cli_export_meridian_terminal():
+    result = runner.invoke(
+        app,
+        [
+            "export-meridian",
+            "--customer-id",
+            "1234567890",
+            "--start-date",
+            "2026-10-01",
+            "--end-date",
+            "2026-10-31",
+            "--freq",
+            "W-MON",
+            "--format",
+            "terminal",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Deconstructed PMax Media Mix Channels" in result.stdout
+    assert "Google Meridian Ingestion Ready" in result.stdout
+    assert "pmax_shop" in result.stdout or "pmax_sear" in result.stdout
+
+
+def test_cli_export_meridian_files(tmp_path):
+    csv_file = tmp_path / "meridian_pmax.csv"
+    py_file = tmp_path / "meridian_spec.py"
+
+    result = runner.invoke(
+        app,
+        [
+            "export-meridian",
+            "--customer-id",
+            "1234567890",
+            "--start-date",
+            "2026-10-01",
+            "--end-date",
+            "2026-10-31",
+            "--output",
+            str(csv_file),
+            "--script-out",
+            str(py_file),
+            "--format",
+            "terminal",
+        ],
+    )
+    assert result.exit_code == 0
+    assert csv_file.exists()
+    assert py_file.exists()
+
+    csv_text = csv_file.read_text(encoding="utf-8")
+    assert "date,geo,conversions" in csv_text
+    assert "pmax_shopping_spend" in csv_text
+
+    py_text = py_file.read_text(encoding="utf-8")
+    assert "DataFrameInputDataBuilder" in py_text
+    assert "media_cols" in py_text
+
+
+def test_cli_export_meridian_json():
+    result = runner.invoke(
+        app,
+        [
+            "export-meridian",
+            "--customer-id",
+            "1234567890",
+            "--start-date",
+            "2026-10-01",
+            "--end-date",
+            "2026-10-15",
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["customer_id"] == "1234567890"
+    assert data["frequency"] == "W-MON"
+    assert len(data["records"]) > 0
+    assert "spec" in data
+    assert "media_spend_cols" in data["spec"]

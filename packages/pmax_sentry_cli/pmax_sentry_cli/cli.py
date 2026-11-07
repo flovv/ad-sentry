@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 from pathlib import Path
 from typing import Optional
+import json
 import typer
 from rich.console import Console
 
@@ -19,7 +20,16 @@ from pmax_sentry_core.exporters import (
     export_search_insight_csv,
     export_search_insight_json,
 )
+from pmax_sentry_core.meridian import (
+    CANONICAL_PMAX_MERIDIAN_CHANNELS,
+    export_meridian_csv,
+    export_meridian_pmax,
+    generate_meridian_python_snippet,
+    generate_meridian_spec,
+)
 from pmax_sentry_cli.formatting import (
+    render_meridian_export_summary,
+
     render_campaigns_table,
     render_delivery_report,
     render_dry_run_panel,
@@ -215,4 +225,110 @@ def insights_cmd(
 
     except Exception as e:
         console.print(f"[bold red]Error running search insights:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command("export-meridian")
+def export_meridian_cmd(
+    customer_id: str = typer.Option(..., "--customer-id", "-c", help="Google Ads 10-digit customer ID"),
+    start_date: str = typer.Option(..., "--start-date", "-s", help="Start date (YYYY-MM-DD)"),
+    end_date: str = typer.Option(..., "--end-date", "-e", help="End date (YYYY-MM-DD)"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Path to save Meridian-ready CSV"),
+    script_out: Optional[Path] = typer.Option(None, "--script-out", help="Path to save Meridian Python ingestion snippet"),
+    freq: str = typer.Option("W-MON", "--freq", "-f", help="Aggregation frequency: W-MON (weekly Monday start), D (daily)"),
+    geo: str = typer.Option("national", "--geo", "-g", help="Geographic grain for MMM (default: national)"),
+    collapse_discovery: bool = typer.Option(False, "--collapse-discovery", help="Collapse Discover/Gmail into pmax_display"),
+    format: str = typer.Option("terminal", "--format", help="Output format: terminal, csv, json"),
+    config: Optional[Path] = typer.Option(None, "--config", help="Path to google-ads.yaml config file"),
+) -> None:
+    """Deconstructs PMax into orthogonal channels and exports dataset for Google Meridian MMM."""
+    s_date = _parse_date(start_date)
+    e_date = _parse_date(end_date)
+    if s_date > e_date:
+        console.print(f"[bold red]Error:[/bold red] start-date ({s_date}) cannot be after end-date ({e_date}).")
+        raise typer.Exit(code=1)
+
+    try:
+        report = fetch_pmax_delivery(
+            customer_id,
+            s_date,
+            e_date,
+            config_path=config,
+            include_demand_gen=False,
+            audit_assets=False,
+            audit_feed=False,
+        )
+
+        df = export_meridian_pmax(
+            report,
+            freq=freq,
+            geo=geo,
+            collapse_discovery_to_display=collapse_discovery,
+        )
+
+        # Identify active channels in DataFrame
+        channels = [
+            c[:-6] for c in df.columns if c.endswith("_spend")
+        ]
+
+        fmt = format.lower()
+        if fmt == "csv":
+            csv_text = export_meridian_csv(
+                report,
+                freq=freq,
+                geo=geo,
+                collapse_discovery_to_display=collapse_discovery,
+            )
+            if output:
+                output.write_text(csv_text, encoding="utf-8")
+                console.print(f"[green]Meridian CSV saved to {output}[/green]")
+            else:
+                print(csv_text)
+            return
+
+        if fmt == "json":
+            payload = {
+                "customer_id": customer_id,
+                "frequency": freq,
+                "geo": geo,
+                "channels": channels,
+                "records": df.to_dict(orient="records"),
+                "spec": generate_meridian_spec(channels=channels),
+            }
+            json_text = json.dumps(payload, indent=2, default=str)
+            if output:
+                output.write_text(json_text, encoding="utf-8")
+                console.print(f"[green]Meridian JSON saved to {output}[/green]")
+            else:
+                print(json_text)
+            return
+
+        if output:
+            csv_text = export_meridian_csv(
+                report,
+                freq=freq,
+                geo=geo,
+                collapse_discovery_to_display=collapse_discovery,
+            )
+            output.write_text(csv_text, encoding="utf-8")
+
+        if script_out:
+            csv_name = output.name if output else "meridian_pmax_input.csv"
+            snippet = generate_meridian_python_snippet(
+                channels=channels,
+                csv_filename=csv_name,
+            )
+            script_out.write_text(snippet, encoding="utf-8")
+            console.print(f"[bold green]✓ Meridian Python script saved to:[/bold green] {script_out}")
+
+        render_meridian_export_summary(
+            df=df,
+            channels=channels,
+            freq=freq,
+            geo=geo,
+            output_path=output,
+        )
+
+    except Exception as e:
+        console.print(f"[bold red]Error exporting for Meridian:[/bold red] {e}")
         raise typer.Exit(code=1)

@@ -403,3 +403,54 @@ def render_search_insights_report(report: SearchInsightReport) -> None:
         style="bold yellow",
     )
     console.print(Panel(notice, border_style="yellow"))
+
+
+
+def render_meridian_export_summary(
+    df: Any,
+    channels: list[str],
+    freq: str,
+    geo: str,
+    output_path: Path | None = None,
+) -> None:
+    table = Table(title=f"Deconstructed PMax Media Mix Channels ({freq} | Geo: {geo})")
+    table.add_column("Channel Name", style="bold cyan")
+    table.add_column("Total Spend", justify="right", style="green")
+    table.add_column("Share of Spend", justify="right")
+    table.add_column("Total Impressions", justify="right")
+    table.add_column("Total Clicks", justify="right")
+    table.add_column("Meridian Media Column", style="dim")
+
+    spend_cols = [f"{ch}_spend" for ch in channels if f"{ch}_spend" in df.columns]
+    total_spend = float(df[spend_cols].sum().sum()) if spend_cols else 1.0
+
+    for ch in channels:
+        s_col = f"{ch}_spend"
+        i_col = f"{ch}_impressions"
+        c_col = f"{ch}_clicks"
+        ch_spend = float(df[s_col].sum()) if s_col in df.columns else 0.0
+        ch_impr = int(df[i_col].sum()) if i_col in df.columns else 0
+        ch_clicks = int(df[c_col].sum()) if c_col in df.columns else 0
+        share = (ch_spend / total_spend) * 100 if total_spend > 0 else 0.0
+
+        table.add_row(
+            ch,
+            f"${ch_spend:,.2f}",
+            f"{share:.1f}%",
+            f"{ch_impr:,}",
+            f"{ch_clicks:,}",
+            f"{ch}_impressions",
+        )
+
+    console.print(table)
+    conv_total = float(df["conversions"].sum()) if "conversions" in df.columns else 0.0
+    summary_text = (
+        f"[bold]Dataset Size:[/bold] {len(df)} time periods ({freq}) across {len(channels)} orthogonal channels\n"
+        f"[bold]Total Deconstructed Spend:[/bold] ${total_spend:,.2f} | [bold]Attributed Conversions:[/bold] {conv_total:,.1f}\n"
+    )
+    if output_path:
+        summary_text += f"[bold green]✓ CSV Output Saved to:[/bold green] {output_path}\n"
+    summary_text += (
+        "\n[dim]Ready for direct ingestion in Google Meridian (`DataFrameInputDataBuilder`) and PyMC-Marketing.[/dim]"
+    )
+    console.print(Panel(summary_text, title="[bold]Google Meridian Ingestion Ready[/bold]", border_style="green"))
