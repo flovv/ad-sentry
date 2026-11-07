@@ -196,6 +196,68 @@ ad-audit insights \
 
 Identifies how much search volume is coming from your brand name vs generic category terms.
 
+### Google Meridian & PyMC-Marketing MMM Bridge
+
+Modern Bayesian Media Mix Models (like **[Google Meridian](https://github.com/google/meridian)** and **PyMC-Marketing**) require **orthogonal channel inputs** to estimate saturation curves (Hill parameters) and adstock decay. 
+
+Because Google Performance Max blends intent-driven Search and Shopping with upper-funnel YouTube and Display into a single line item, traditional MMMs suffer from high collinearity and biased ROAS estimation.
+
+Ad Sentry deconstructs blended PMax delivery into 5 distinct orthogonal channels:
+- `pmax_shopping`: Google Merchant Center feed clicks and conversions.
+- `pmax_search`: High-intent search text ads and search partners.
+- `pmax_youtube`: In-stream video and YouTube Shorts.
+- `pmax_display`: Display network remarketing and contextual web placements.
+- `pmax_discovery`: Discover feed and Gmail placements.
+
+#### Exporting Meridian-Ready Weekly Dataset & Python Builder:
+
+```bash
+ad-audit export-meridian \
+  --customer-id 1234567890 \
+  --start-date 2026-01-01 \
+  --end-date 2026-10-31 \
+  --freq W-MON \
+  --geo national \
+  --output meridian_pmax.csv \
+  --script-out run_meridian.py
+```
+
+Flags:
+- `--freq / -f`: Aggregation grain (`W-MON` Monday-start weeks for Meridian standard, or `D` for daily).
+- `--geo / -g`: Geographic dimension (default: `national`).
+- `--collapse-discovery`: Optionally roll Discover & Gmail into `pmax_display`.
+- `--output / -o`: CSV export formatted with ISO date, geo, channel spend, impressions, clicks, conversions, and conversion value.
+- `--script-out`: Generates ready-to-execute Python ingestion code using `meridian.data.data_frame_input_data_builder.DataFrameInputDataBuilder`.
+
+#### Meridian Python Ingestion Preview:
+
+```python
+import pandas as pd
+from meridian.data.data_frame_input_data_builder import DataFrameInputDataBuilder
+
+df = pd.read_csv("meridian_pmax.csv")
+df["date"] = pd.to_datetime(df["date"])
+
+channels = ["pmax_shopping", "pmax_search", "pmax_youtube", "pmax_display", "pmax_discovery"]
+
+builder = (
+    DataFrameInputDataBuilder(
+        kpi_type="non_revenue",
+        time_col="date",
+        geo_col="geo",
+        kpi_col="conversions",
+    )
+    .with_media(
+        media_cols=[f"{ch}_impressions" for ch in channels],
+        media_spend_cols=[f"{ch}_spend" for ch in channels],
+        media_channels=channels,
+    )
+)
+input_data = builder.build(df)
+```
+
+Ad Sentry also exposes this deconstruction via its built-in **MCP server** (`export_meridian_dataset` tool), allowing LLM analysts in Claude Desktop or Cursor to inspect MMM-ready channel splits instantly.
+
 ### Generate Client-Ready HTML Pitch Decks
 
 Agencies use Ad Sentry during prospective client audits to generate a standalone HTML presentation deck:

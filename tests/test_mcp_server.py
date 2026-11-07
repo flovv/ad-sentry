@@ -14,6 +14,7 @@ from pmax_sentry_mcp.server import (
     propose_experiment_design,
     run_incrementality_diagnostic,
     validate_business_outcomes,
+    export_meridian_dataset,
 )
 from tests.test_services import generate_sample_csv
 
@@ -99,3 +100,22 @@ def test_mcp_generate_contract():
     assert contract["contract_version"] == "1.0.0"
     assert contract["recommendation_type"] == "REVIEW"
     assert contract["approval_required"] is True
+
+
+def test_mcp_export_meridian_dataset():
+    res = export_meridian_dataset(
+        customer_id="1234567890",
+        start_date="2026-10-01",
+        end_date="2026-10-31",
+        freq="W-MON",
+        geo="national",
+    )
+    assert res["customer_id"] == "1234567890"
+    assert res["frequency"] == "W-MON"
+    assert res["geo"] == "national"
+    assert res["record_count"] > 0
+    assert len(res["active_channels"]) > 0
+    assert "meridian_spec" in res
+    assert "time_col" in res["meridian_spec"]
+    assert "python_ingestion_snippet" in res
+    assert "DataFrameInputDataBuilder" in res["python_ingestion_snippet"]

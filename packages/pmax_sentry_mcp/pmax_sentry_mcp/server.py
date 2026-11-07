@@ -13,6 +13,12 @@ from pmax_sentry_core.api import (
     list_pmax_campaigns as core_list_campaigns,
 )
 from pmax_sentry_core.models import DeliveryReport
+from pmax_sentry_core.meridian import (
+    CANONICAL_PMAX_MERIDIAN_CHANNELS,
+    export_meridian_pmax,
+    generate_meridian_python_snippet,
+    generate_meridian_spec,
+)
 from services.data_ingestion.validator import parse_business_outcomes_csv
 from services.data_quality.preflight import run_data_quality_preflight
 from services.decision_contracts.generator import (
@@ -264,6 +270,56 @@ def generate_decision_contract(
     else:
         raise ValueError(f"Unknown contract_type '{contract_type}'")
     return contract.model_dump(mode="json")
+
+
+
+@mcp.tool()
+def export_meridian_dataset(
+    customer_id: str,
+    start_date: str,
+    end_date: str,
+    freq: str = "W-MON",
+    geo: str = "national",
+    collapse_discovery: bool = False,
+) -> dict[str, Any]:
+    """
+    Deconstructs Performance Max blended campaign metrics into orthogonal channels
+    (pmax_shopping, pmax_search, pmax_youtube, pmax_display, pmax_discovery) formatted
+    specifically for Google Meridian MMM (Media Mix Modeling) and PyMC-Marketing.
+    Returns weekly/daily aggregated time-series records, channel summaries, and the Meridian InputData specification.
+    """
+    s_date = dt.date.fromisoformat(start_date)
+    e_date = dt.date.fromisoformat(end_date)
+    report = fetch_pmax_delivery(
+        customer_id=customer_id,
+        start_date=s_date,
+        end_date=e_date,
+        include_demand_gen=False,
+        audit_assets=False,
+        audit_feed=False,
+    )
+
+    df = export_meridian_pmax(
+        report=report,
+        freq=freq,
+        geo=geo,
+        collapse_discovery_to_display=collapse_discovery,
+    )
+
+    channels = [c[:-6] for c in df.columns if c.endswith("_spend")]
+    spec = generate_meridian_spec(channels=channels)
+    python_snippet = generate_meridian_python_snippet(channels=channels)
+
+    return {
+        "customer_id": customer_id,
+        "frequency": freq,
+        "geo": geo,
+        "active_channels": channels,
+        "record_count": len(df),
+        "records": df.to_dict(orient="records"),
+        "meridian_spec": spec,
+        "python_ingestion_snippet": python_snippet,
+    }
 
 
 def main() -> None:
