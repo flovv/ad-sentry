@@ -44,6 +44,8 @@ WHERE campaign.advertising_channel_type {channel_types_condition}
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
 """
 
+# NOTE: segments.ad_using_product_data and segments.ad_using_video are
+# exclusively supported for PERFORMANCE_MAX campaigns in Google Ads API v23-v26.
 GAQL_SEGMENTED_DELIVERY = """
 SELECT
   campaign.id,
@@ -60,10 +62,32 @@ SELECT
   metrics.conversions_value,
   metrics.view_through_conversions
 FROM campaign
-WHERE campaign.advertising_channel_type {channel_types_condition}
+WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
 """
 
+# Separate query for Demand Gen because ad_using_product_data / ad_using_video
+# are incompatible with DEMAND_GEN in live Google Ads API.
+GAQL_DEMAND_GEN_DELIVERY = """
+SELECT
+  campaign.id,
+  campaign.name,
+  campaign.advertising_channel_type,
+  segments.date,
+  segments.ad_network_type,
+  metrics.impressions,
+  metrics.clicks,
+  metrics.cost_micros,
+  metrics.conversions,
+  metrics.conversions_value,
+  metrics.view_through_conversions
+FROM campaign
+WHERE campaign.advertising_channel_type = 'DEMAND_GEN'
+  AND segments.date BETWEEN '{start_date}' AND '{end_date}'
+"""
+
+# NOTE: campaign_search_term_insight does not expose metrics.search_volume
+# or metrics.cost_micros in Google Ads API v26.
 GAQL_SEARCH_TERM_INSIGHTS = """
 SELECT
   campaign.id,
@@ -73,8 +97,7 @@ SELECT
   metrics.clicks,
   metrics.conversions,
   metrics.conversions_value,
-  metrics.impressions,
-  metrics.search_volume
+  metrics.impressions
 FROM campaign_search_term_insight
 WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'

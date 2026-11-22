@@ -15,7 +15,7 @@ metadata:
 
 Audits Google Ads Performance Max delivery, reconciles campaign totals against segmented delivery, evaluates search-demand volume, and determines business break-even economics:
 
-- **Free Open-Core (`pmax-sentry`):** PMax channel (Search, Partners, Display, YouTube, Discover, Gmail, Maps) and format (product feed, video) segmentation via API v26, unsegmented total vs. segmented cost reconciliation (raw difference, coverage ratio, zero hidden residuals), and search demand insight categories (volume, clicks, conversions without cost metrics).
+- **Free Open-Core (`pmax-sentry`):** PMax channel (Search, Partners, Display, YouTube, Discover, Gmail, Maps) and format (product feed, video) segmentation via API v26, unsegmented total vs. segmented cost reconciliation (raw difference, coverage ratio, zero hidden residuals), and search demand insight categories (impressions, clicks, conversions, conversion value without cost metrics).
 - **PMax Sentry Pro (`pmax-sentry-pro`):** Business outcome data quality preflight (sample size, continuity, conversion lag maturation, spend variance), observational regression diagnostic, dynamic power analysis & MDE, causal Difference-in-Differences (DiD) experiment evaluation, and standalone White-Label HTML/PDF Pitch Decks for agency client presentations.
 
 > [!IMPORTANT]
@@ -71,7 +71,7 @@ pmax-audit insights --customer-id 1234567890 --start-date 2026-10-01 --end-date 
 ```
 
 > [!WARNING]
-> Search-term insights represent **search demand** (clicks, impressions, search volume, conversions). They **never contain ad spend**.
+> Search-term insights represent **search demand** (impressions, clicks, conversions, conversion value). `campaign_search_term_insight` does **not** expose `metrics.cost_micros` or `metrics.search_volume`.
 > Never subtract category values to calculate brand-search spend.
 
 ---
@@ -136,6 +136,24 @@ else:
     diag = run_incrementality_diagnostic(dataset, lag_days=14)
     print(f"Modeled iROAS: {diag.modeled_iroas_estimate.formatted}")
 ```
+
+---
+
+### 6. Google Meridian & PyMC-Marketing MMM Export
+Deconstruct blended PMax delivery into 5 orthogonal channels (`pmax_shopping`, `pmax_search`, `pmax_youtube`, `pmax_display`, `pmax_discovery`) aligned to ISO weekly (`W-MON`) or daily (`D`) intervals:
+
+```bash
+ad-audit export-meridian \
+  --customer-id 1234567890 \
+  --start-date 2026-01-01 \
+  --end-date 2026-10-31 \
+  --freq W-MON \
+  --geo national \
+  --output meridian_pmax.csv \
+  --script-out run_meridian.py
+```
+
+Also exposed via MCP tool `export_meridian_dataset` in `ad-mcp`.
 
 ---
 

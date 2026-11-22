@@ -13,16 +13,16 @@ Interactive Demo Deck: [https://flovv.github.io/ad-sentry/](https://flovv.github
 
 ---
 
-## The Problem: What Google and Meta Hide
+## The Problem: What Platform Dashboards Still Miss in 2026
 
-Automated ad formats (Google Performance Max, Google Demand Gen, and Meta Advantage+ Shopping) report a single blended ROAS in the dashboard (e.g. "3.8x ROAS"). This top-line number masks four major sources of budget waste:
+Even after Google added basic PMax channel charts and search term views to the UI in 2024–2025, automated ad formats (Google Performance Max, Demand Gen, and Meta Advantage+ Shopping) still optimize around **blended top-line ROAS** without your unit economics. That leaves four costly blind spots:
 
-1. **Hidden Display & Video Spend:** Google's UI does not show the channel split. A campaign reporting 3.8x ROAS often spends 30% to 45% of its budget on low-intent Display Network placements and YouTube videos that return under 1.2x ROAS. The campaign only looks profitable because it poached branded search queries that would have converted organically.
-2. **Zombie Products in Shopping Feeds:** In most e-commerce feeds, 15% to 25% of shopping ad spend is burned on "zombie" SKUs—products that accumulate clicks over 30 to 90 days but generate zero sales.
-3. **Auto-Generated YouTube Shorts Disasters:** When an asset group lacks a 9:16 vertical video, Google's system automatically generates low-quality slideshow videos with synthetic audio. These auto-generated ads run on YouTube Shorts, burn budget, and hurt conversion rates.
-4. **Internal Campaign Collisions:** When PMax and Demand Gen run simultaneously without proper exclusions, they bid against each other for the same YouTube in-stream, Discover, and Gmail inventory.
+1. **Silent "Feed-Only" PMax Leakage & Sub-Hurdle Placements:** Even when advertisers run "feed-only" PMax with zero creative assets uploaded, Google increasingly uses Merchant Center product images to serve Display Network and YouTube Shorts placements. A campaign reporting a blended 3.8x ROAS routinely loses money on 20% to 45% of its spend once compared against your actual **contribution-margin break-even hurdle** ($1 / \mu$).
+2. **Zombie Products in Shopping Feeds:** In most e-commerce feeds, 15% to 25% of shopping ad spend is burned on "zombie" SKUs—products that accumulate clicks over 30 to 90 days while generating zero sales.
+3. **Auto-Generated YouTube Shorts Waste:** When an asset group lacks a native 9:16 vertical video, Google automatically generates slideshow videos with synthetic audio that run on YouTube Shorts and drag down conversion rates.
+4. **Cross-Campaign Collisions & MMM Collinearity:** When PMax and Demand Gen run together without strict exclusions, they bid against each other for the same YouTube, Discover, and Gmail inventory. And because UI charts cannot be exported as clean orthogonal time series, data teams cannot feed PMax accurately into **Google Meridian** or **PyMC-Marketing** MMMs.
 
-Ad Sentry pulls the raw, unaggregated API data to expose these leaks in seconds. It runs locally, read-only, offline-first, and never sends account data to third-party servers.
+Ad Sentry pulls raw Google Ads API v26 and Meta Marketing API data, reconciles segmented totals against unsegmented campaign spend, and flags every leak in 30 seconds. It runs locally, read-only, offline-first, and never sends account data to third-party servers.
 
 ---
 
@@ -38,9 +38,9 @@ ad-audit report \
   --margin 0.40
 ```
 
-### 1. Unmask Hidden Channel Spend
+### 1. Reconcile Channel-by-Format Spend Against Your Margin Hurdle
 
-Google's UI hides where your dollars go. Ad Sentry reconstructs the exact channel-by-format breakdown:
+Ad Sentry pulls `segments.ad_network_type`, `segments.ad_using_product_data`, and `segments.ad_using_video` via Google Ads API v26, reconciles them against unsegmented campaign totals, and grades every placement against your break-even ROAS ($1 / \mu$):
 
 ```text
 Campaign: PMax - Core Products (ID: 9876543210)

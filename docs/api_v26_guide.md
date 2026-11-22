@@ -62,8 +62,7 @@ SELECT
   metrics.clicks,
   metrics.conversions,
   metrics.conversions_value,
-  metrics.impressions,
-  metrics.search_volume
+  metrics.impressions
 FROM campaign_search_term_insight
 WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
@@ -75,7 +74,7 @@ WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
 
 ### 4. Cross-Campaign Overlap Query (PMax + Demand Gen)
 
-When `--include-demand-gen` is enabled, the query expands to include `DEMAND_GEN` campaigns to diagnose auction collision on YouTube, Discover, and Gmail, and extract view-through conversions (`metrics.view_through_conversions`):
+Because `segments.ad_using_product_data` and `segments.ad_using_video` are exclusively supported for `PERFORMANCE_MAX` in Google Ads API v23–v26, enabling `--include-demand-gen` executes a **separate** Demand Gen query without those PMax-only segments and merges the resulting rows to diagnose auction collision on YouTube, Discover, and Gmail alongside view-through conversions (`metrics.view_through_conversions`):
 
 ```sql
 SELECT
@@ -84,8 +83,6 @@ SELECT
   campaign.advertising_channel_type,
   segments.date,
   segments.ad_network_type,
-  segments.ad_using_product_data,
-  segments.ad_using_video,
   metrics.impressions,
   metrics.clicks,
   metrics.cost_micros,
@@ -93,7 +90,7 @@ SELECT
   metrics.conversions_value,
   metrics.view_through_conversions
 FROM campaign
-WHERE campaign.advertising_channel_type IN ('PERFORMANCE_MAX', 'DEMAND_GEN')
+WHERE campaign.advertising_channel_type = 'DEMAND_GEN'
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
 ```
 

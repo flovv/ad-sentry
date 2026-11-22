@@ -11,9 +11,11 @@ from pmax_sentry_core.client import (
     GAQL_ASSET_GROUP_SIGNALS,
     GAQL_ASSET_GROUPS,
     GAQL_CAMPAIGN_TOTALS,
+    GAQL_DEMAND_GEN_DELIVERY,
     GAQL_SEARCH_TERM_INSIGHTS,
     GAQL_SEGMENTED_DELIVERY,
     GAQL_SHOPPING_PERFORMANCE,
+    PINNED_API_VERSION,
     BaseGoogleAdsClient,
 )
 from pmax_sentry_core.models import (
@@ -41,9 +43,11 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
         config_path: Path | str | None = None,
         login_customer_id: str | None = None,
         client: Any | None = None,
+        api_version: str = PINNED_API_VERSION,
     ) -> None:
         self.config_path = Path(config_path) if config_path else None
         self.login_customer_id = login_customer_id.replace("-", "").strip() if login_customer_id else None
+        self.api_version = api_version
 
         if client is not None:
             self._client = client
@@ -60,14 +64,14 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
             )
 
         if self.config_path and self.config_path.exists():
-            return GoogleAdsClient.load_from_storage(path=str(self.config_path), version="v26")
+            return GoogleAdsClient.load_from_storage(path=str(self.config_path), version=self.api_version)
         else:
             # Load from default environment / google-ads.yaml in user directory
-            return GoogleAdsClient.load_from_storage(version="v26")
+            return GoogleAdsClient.load_from_storage(version=self.api_version)
 
     def get_account_info(self, customer_id: str) -> AccountInfo:
         cid = customer_id.replace("-", "").strip()
-        ga_service = self._client.get_service("GoogleAdsService", version="v26")
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
         query = """
         SELECT
           customer.id,
@@ -99,7 +103,7 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
         self, customer_id: str, include_demand_gen: bool = False
     ) -> list[CampaignInfo]:
         cid = customer_id.replace("-", "").strip()
-        ga_service = self._client.get_service("GoogleAdsService", version="v26")
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
         channel_cond = (
             "IN ('PERFORMANCE_MAX', 'DEMAND_GEN')"
             if include_demand_gen
@@ -153,7 +157,7 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
         self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
     ) -> int:
         cid = customer_id.replace("-", "").strip()
-        ga_service = self._client.get_service("GoogleAdsService", version="v26")
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
         channel_cond = (
             "IN ('PERFORMANCE_MAX', 'DEMAND_GEN')"
             if include_demand_gen
@@ -170,42 +174,31 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
             total_cost_micros += int(row.metrics.cost_micros)
         return total_cost_micros
 
-    def query_segmented_delivery(
-        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
+    def _parse_delivery_rows(
+        self,
+        response: Any,
+        cid: str,
+        currency_code: str,
+        include_pmax_format_flags: bool = True,
     ) -> list[DeliveryRow]:
-        cid = customer_id.replace("-", "").strip()
-        account = self.get_account_info(cid)
-        ga_service = self._client.get_service("GoogleAdsService", version="v26")
-        channel_cond = (
-            "IN ('PERFORMANCE_MAX', 'DEMAND_GEN')"
-            if include_demand_gen
-            else "= 'PERFORMANCE_MAX'"
-        )
-        query = GAQL_SEGMENTED_DELIVERY.format(
-            channel_types_condition=channel_cond,
-            start_date=start_date.isoformat(),
-            end_date=end_date.isoformat(),
-        )
-        response = ga_service.search(customer_id=cid, query=query)
+        channel_mapping = {
+            "SEARCH": "Google Search",
+            "SEARCH_PARTNERS": "Search Partners",
+            "CONTENT": "Display",
+            "YOUTUBE_WATCH": "YouTube",
+            "YOUTUBE_SEARCH": "YouTube",
+            "DISCOVER": "Discover",
+            "GMAIL": "Gmail",
+            "MAPS": "Maps",
+            "CROSS_NETWORK": "Cross-Network",
+        }
         rows: list[DeliveryRow] = []
-
         for row in response:
             channel_val = (
                 row.segments.ad_network_type.name
                 if hasattr(row.segments.ad_network_type, "name")
                 else str(row.segments.ad_network_type)
             )
-            # Map enum representation to readable channel name
-            channel_mapping = {
-                "SEARCH": "Google Search",
-                "SEARCH_PARTNERS": "Search Partners",
-                "CONTENT": "Display",
-                "YOUTUBE_WATCH": "YouTube",
-                "YOUTUBE_SEARCH": "YouTube",
-                "DISCOVER": "Discover",
-                "GMAIL": "Gmail",
-                "MAPS": "Maps",
-            }
             clean_channel = channel_mapping.get(channel_val, channel_val.replace("_", " ").title())
             ad_channel_type = (
                 row.campaign.advertising_channel_type.name
@@ -213,6 +206,16 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
                 else str(row.campaign.advertising_channel_type)
             )
             vt_conv = getattr(row.metrics, "view_through_conversions", 0)
+            uses_product_data = (
+                getattr(row.segments, "ad_using_product_data", None)
+                if include_pmax_format_flags
+                else None
+            )
+            uses_video = (
+                getattr(row.segments, "ad_using_video", None)
+                if include_pmax_format_flags
+                else None
+            )
 
             rows.append(
                 DeliveryRow(
@@ -222,9 +225,9 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
                     advertising_channel_type=ad_channel_type,
                     date=date.fromisoformat(row.segments.date),
                     channel=clean_channel,
-                    uses_product_data=getattr(row.segments, "ad_using_product_data", None),
-                    uses_video=getattr(row.segments, "ad_using_video", None),
-                    currency_code=account.currency_code,
+                    uses_product_data=uses_product_data,
+                    uses_video=uses_video,
+                    currency_code=currency_code,
                     cost_micros=int(row.metrics.cost_micros),
                     impressions=int(row.metrics.impressions),
                     clicks=int(row.metrics.clicks),
@@ -235,11 +238,41 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
             )
         return rows
 
+    def query_segmented_delivery(
+        self, customer_id: str, start_date: date, end_date: date, include_demand_gen: bool = False
+    ) -> list[DeliveryRow]:
+        cid = customer_id.replace("-", "").strip()
+        account = self.get_account_info(cid)
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
+
+        pmax_query = GAQL_SEGMENTED_DELIVERY.format(
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
+        )
+        pmax_resp = ga_service.search(customer_id=cid, query=pmax_query)
+        rows = self._parse_delivery_rows(
+            pmax_resp, cid, account.currency_code, include_pmax_format_flags=True
+        )
+
+        if include_demand_gen:
+            dg_query = GAQL_DEMAND_GEN_DELIVERY.format(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            )
+            dg_resp = ga_service.search(customer_id=cid, query=dg_query)
+            rows.extend(
+                self._parse_delivery_rows(
+                    dg_resp, cid, account.currency_code, include_pmax_format_flags=False
+                )
+            )
+
+        return rows
+
     def query_search_insights(
         self, customer_id: str, start_date: date, end_date: date
     ) -> list[SearchInsightRow]:
         cid = customer_id.replace("-", "").strip()
-        ga_service = self._client.get_service("GoogleAdsService", version="v26")
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
         query = GAQL_SEARCH_TERM_INSIGHTS.format(
             start_date=start_date.isoformat(), end_date=end_date.isoformat()
         )
