@@ -7,16 +7,24 @@ from pathlib import Path
 from typing import Any
 
 from pmax_sentry_core.client import (
+    GAQL_ASSET_GROUP_ASSETS,
+    GAQL_ASSET_GROUP_SIGNALS,
+    GAQL_ASSET_GROUPS,
     GAQL_CAMPAIGN_TOTALS,
     GAQL_SEARCH_TERM_INSIGHTS,
     GAQL_SEGMENTED_DELIVERY,
+    GAQL_SHOPPING_PERFORMANCE,
     BaseGoogleAdsClient,
 )
 from pmax_sentry_core.models import (
     AccountInfo,
+    AssetGroupAuditRow,
+    AssetGroupHealthReport,
     CampaignInfo,
     DeliveryRow,
+    ProductFeedAuditReport,
     SearchInsightRow,
+    ZombieProductRow,
 )
 
 logger = logging.getLogger("pmax_sentry.live_client")
@@ -254,3 +262,328 @@ class GoogleAdsApiClient(BaseGoogleAdsClient):
                 )
             )
         return rows
+
+    def query_asset_groups(self, customer_id: str) -> AssetGroupHealthReport:
+        """Fetch and audit live PMax asset groups, assets, and signals via GAQL."""
+        cid = customer_id.replace("-", "").strip()
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
+
+        ag_meta: dict[str, dict[str, Any]] = {}
+        for row in ga_service.search(customer_id=cid, query=GAQL_ASSET_GROUPS):
+            ag = row.asset_group
+            ag_id = str(ag.id)
+            status_name = ag.status.name if hasattr(ag.status, "name") else str(ag.status)
+            ad_strength = ag.ad_strength.name if hasattr(ag.ad_strength, "name") else str(ag.ad_strength)
+            ag_meta[ag_id] = {
+                "asset_group_id": ag_id,
+                "asset_group_name": ag.name,
+                "campaign_id": str(row.campaign.id),
+                "campaign_name": row.campaign.name,
+                "status": status_name,
+                "ad_strength": ad_strength,
+                "headlines": 0,
+                "long_headlines": 0,
+                "descriptions": 0,
+                "images": 0,
+                "has_square": False,
+                "has_landscape": False,
+                "has_portrait": False,
+                "videos": 0,
+                "has_vertical_video": False,
+                "search_themes": 0,
+                "has_audience_signals": False,
+            }
+
+        if not ag_meta:
+            return AssetGroupHealthReport()
+
+        for row in ga_service.search(customer_id=cid, query=GAQL_ASSET_GROUP_ASSETS):
+            ag_id = str(row.asset_group.id)
+            if ag_id not in ag_meta:
+                continue
+            entry = ag_meta[ag_id]
+            ft = (
+                row.asset_group_asset.field_type.name
+                if hasattr(row.asset_group_asset.field_type, "name")
+                else str(row.asset_group_asset.field_type)
+            )
+            if ft == "HEADLINE":
+                entry["headlines"] += 1
+            elif ft == "LONG_HEADLINE":
+                entry["long_headlines"] += 1
+            elif ft == "DESCRIPTION":
+                entry["descriptions"] += 1
+            elif ft in ("MARKETING_IMAGE", "SQUARE_MARKETING_IMAGE", "PORTRAIT_MARKETING_IMAGE"):
+                entry["images"] += 1
+                if ft == "SQUARE_MARKETING_IMAGE":
+                    entry["has_square"] = True
+                elif ft == "MARKETING_IMAGE":
+                    entry["has_landscape"] = True
+                elif ft == "PORTRAIT_MARKETING_IMAGE":
+                    entry["has_portrait"] = True
+            elif ft in ("YOUTUBE_VIDEO", "PORTRAIT_VIDEO"):
+                entry["videos"] += 1
+                if ft == "PORTRAIT_VIDEO":
+                    entry["has_vertical_video"] = True
+
+        try:
+            for row in ga_service.search(customer_id=cid, query=GAQL_ASSET_GROUP_SIGNALS):
+                ag_id = str(row.asset_group.id)
+                if ag_id not in ag_meta:
+                    continue
+                sig = row.asset_group_signal
+                if hasattr(sig, "audience") and getattr(sig.audience, "audience", None):
+                    ag_meta[ag_id]["has_audience_signals"] = True
+                if hasattr(sig, "search_theme") and getattr(sig.search_theme, "text", None):
+                    ag_meta[ag_id]["search_themes"] += 1
+        except Exception as exc:
+            logger.warning("Could not query asset_group_signal for %s: %s", cid, exc)
+
+        audited: list[AssetGroupAuditRow] = []
+        for entry in ag_meta.values():
+            score = 0
+            critical_issues: list[str] = []
+            action_items: list[str] = []
+
+            if entry["headlines"] >= 5:
+                score += 15
+            elif entry["headlines"] >= 3:
+                score += 8
+                critical_issues.append(f"Headlines below best-practice threshold ({entry['headlines']}/5 minimum)")
+                action_items.append("Add distinct value-proposition headlines to reach at least 5.")
+            else:
+                critical_issues.append(f"Critically low headline count ({entry['headlines']}/5 minimum)")
+                action_items.append("Upload at least 5 headlines immediately.")
+
+            if entry["long_headlines"] >= 2:
+                score += 10
+            elif entry["long_headlines"] == 1:
+                score += 5
+                action_items.append("Add a second long headline for Display/Discover variation.")
+            else:
+                critical_issues.append("Missing long headlines (0 uploaded)")
+
+            if entry["descriptions"] >= 3:
+                score += 10
+            elif entry["descriptions"] >= 1:
+                score += 5
+                action_items.append("Add descriptions to reach at least 3.")
+            else:
+                critical_issues.append("Missing descriptions (0 uploaded)")
+
+            if entry["has_square"]:
+                score += 10
+            else:
+                critical_issues.append("Missing 1:1 square image (limiting Display network formats)")
+                action_items.append("Upload 1:1 square marketing images.")
+
+            if entry["has_landscape"]:
+                score += 10
+            else:
+                critical_issues.append("Missing 1.91:1 landscape image")
+                action_items.append("Upload 1.91:1 landscape marketing images.")
+
+            if entry["has_portrait"]:
+                score += 5
+            if entry["images"] >= 5:
+                score += 5
+
+            if entry["videos"] >= 1:
+                score += 10
+            else:
+                critical_issues.append("Zero video assets uploaded (forfeiting YouTube and Shorts delivery)")
+                action_items.append("Upload native video creatives to avoid low-quality auto-generated slideshows.")
+
+            if entry["has_vertical_video"]:
+                score += 10
+            elif entry["videos"] >= 1:
+                critical_issues.append("Missing 9:16 Vertical Video (Google auto-generates slideshow video on Shorts)")
+                action_items.append("Upload a native 9:16 vertical video for YouTube Shorts.")
+
+            if entry["has_audience_signals"]:
+                score += 10
+            else:
+                critical_issues.append("Missing audience signals (algorithm exploring broadly without seed targets)")
+                action_items.append("Attach Customer Match or Custom In-Market audience signals.")
+
+            if entry["search_themes"] >= 3:
+                score += 5
+            elif entry["search_themes"] >= 1:
+                score += 3
+            else:
+                action_items.append("Add Search Themes to guide PMax Search inventory discovery.")
+
+            if not action_items:
+                action_items.append("Asset coverage is optimal. Monitor search theme match rate and creative fatigue.")
+
+            grade = (
+                "A+" if score >= 93
+                else "A" if score >= 85
+                else "B" if score >= 75
+                else "C" if score >= 60
+                else "D" if score >= 45
+                else "F"
+            )
+
+            audited.append(
+                AssetGroupAuditRow(
+                    asset_group_id=entry["asset_group_id"],
+                    asset_group_name=entry["asset_group_name"],
+                    campaign_id=entry["campaign_id"],
+                    campaign_name=entry["campaign_name"],
+                    status=entry["status"],
+                    ad_strength=entry["ad_strength"],
+                    headlines_count=entry["headlines"],
+                    long_headlines_count=entry["long_headlines"],
+                    descriptions_count=entry["descriptions"],
+                    images_count=entry["images"],
+                    has_square_image=entry["has_square"],
+                    has_landscape_image=entry["has_landscape"],
+                    has_portrait_image=entry["has_portrait"],
+                    videos_count=entry["videos"],
+                    has_vertical_video=entry["has_vertical_video"],
+                    search_themes_count=entry["search_themes"],
+                    has_audience_signals=entry["has_audience_signals"],
+                    score=score,
+                    grade=grade,
+                    critical_issues=critical_issues,
+                    action_items=action_items,
+                )
+            )
+
+        avg_score = round(sum(g.score for g in audited) / len(audited), 1)
+        overall_grade = (
+            "A" if avg_score >= 90
+            else "B" if avg_score >= 80
+            else "C" if avg_score >= 65
+            else "D" if avg_score >= 50
+            else "F"
+        )
+        missing_vert = sum(1 for g in audited if not g.has_vertical_video)
+        missing_aud = sum(1 for g in audited if not g.has_audience_signals)
+        recs: list[str] = []
+        if missing_vert > 0:
+            recs.append(f"Upload 9:16 vertical videos across {missing_vert} asset group(s) to eliminate auto-generated Shorts.")
+        if missing_aud > 0:
+            recs.append(f"Attach audience signal seeds to {missing_aud} asset group(s) to stop broad algorithm wandering.")
+
+        return AssetGroupHealthReport(
+            total_asset_groups=len(audited),
+            average_score=avg_score,
+            overall_grade=overall_grade,
+            missing_vertical_video_count=missing_vert,
+            missing_audience_signals_count=missing_aud,
+            asset_groups=audited,
+            recommendations=recs,
+        )
+
+    def query_product_feed(
+        self, customer_id: str, start_date: date, end_date: date
+    ) -> ProductFeedAuditReport:
+        """Fetch and audit live Google Merchant Center product feed performance via GAQL."""
+        cid = customer_id.replace("-", "").strip()
+        ga_service = self._client.get_service("GoogleAdsService", version=self.api_version)
+        query = GAQL_SHOPPING_PERFORMANCE.format(
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
+        )
+
+        sku_agg: dict[str, dict[str, Any]] = {}
+        for row in ga_service.search(customer_id=cid, query=query):
+            sku_id = str(getattr(row.segments, "product_item_id", "") or "unknown_sku")
+            title = str(getattr(row.segments, "product_title", "") or sku_id)
+            brand = str(getattr(row.segments, "product_brand", "") or "Unknown")
+            cost = Decimal(int(row.metrics.cost_micros)) / Decimal(1_000_000)
+            imps = int(row.metrics.impressions)
+            clicks = int(row.metrics.clicks)
+            convs = Decimal(str(row.metrics.conversions))
+            cval = Decimal(str(row.metrics.conversions_value))
+
+            if sku_id not in sku_agg:
+                sku_agg[sku_id] = {
+                    "product_id": sku_id,
+                    "title": title,
+                    "brand": brand,
+                    "cost": Decimal("0"),
+                    "impressions": 0,
+                    "clicks": 0,
+                    "conversions": Decimal("0"),
+                    "conversion_value": Decimal("0"),
+                }
+            rec = sku_agg[sku_id]
+            rec["cost"] += cost
+            rec["impressions"] += imps
+            rec["clicks"] += clicks
+            rec["conversions"] += convs
+            rec["conversion_value"] += cval
+
+        if not sku_agg:
+            return ProductFeedAuditReport()
+
+        zombies: list[ZombieProductRow] = []
+        top_performers_count = 0
+        ghost_count = 0
+        total_cost = Decimal("0")
+        zombie_spend = Decimal("0")
+
+        for rec in sku_agg.values():
+            cost = rec["cost"].quantize(Decimal("0.01"))
+            total_cost += cost
+            if rec["conversions"] > 0:
+                top_performers_count += 1
+            elif cost > 0:
+                zombie_spend += cost
+                zombies.append(
+                    ZombieProductRow(
+                        product_id=rec["product_id"],
+                        title=rec["title"],
+                        brand=rec["brand"],
+                        cost=cost,
+                        impressions=rec["impressions"],
+                        clicks=rec["clicks"],
+                        conversions=rec["conversions"],
+                        conversion_value=rec["conversion_value"].quantize(Decimal("0.01")),
+                        classification="ZOMBIE",
+                        suggested_action=(
+                            f"Exclude SKU or set Custom Label 0 = 'zombie' to halt {cost:,.2f} zero-conversion spend."
+                        ),
+                    )
+                )
+            else:
+                ghost_count += 1
+
+        zombies.sort(key=lambda z: z.cost, reverse=True)
+        day_count = max(1, (end_date - start_date).days + 1)
+        zombie_share = (
+            ((zombie_spend / total_cost) * Decimal(100)).quantize(Decimal("0.1"))
+            if total_cost > 0
+            else Decimal("0.0")
+        )
+        est_monthly = (zombie_spend * Decimal(30) / Decimal(day_count)).quantize(Decimal("0.01"))
+
+        action_plan: list[str] = []
+        if zombies:
+            action_plan.append(
+                f"Exclude or deprioritize {len(zombies)} Zombie SKUs to recover ~{est_monthly:,.2f}/mo ({zombie_share}% of feed spend)."
+            )
+        if top_performers_count > 0:
+            action_plan.append(
+                f"Reallocate recovered budget into {top_performers_count} converting SKUs currently constrained by target ROAS bids."
+            )
+        if ghost_count > 0:
+            action_plan.append(
+                f"Review {ghost_count} Ghost SKUs (0 spend) for Merchant Center disapprovals or under-competitive bids."
+            )
+
+        return ProductFeedAuditReport(
+            total_products_audited=len(sku_agg),
+            total_feed_cost=total_cost.quantize(Decimal("0.01")),
+            zombie_products_count=len(zombies),
+            zombie_spend=zombie_spend.quantize(Decimal("0.01")),
+            zombie_spend_share=zombie_share,
+            top_performers_count=top_performers_count,
+            ghost_products_count=ghost_count,
+            top_zombie_products=zombies[:20],
+            estimated_monthly_savings=est_monthly,
+            action_plan=action_plan,
+        )

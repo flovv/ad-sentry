@@ -80,6 +80,57 @@ WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
   AND segments.date BETWEEN '{start_date}' AND '{end_date}'
 """
 
+GAQL_ASSET_GROUPS = """
+SELECT
+  asset_group.id,
+  asset_group.name,
+  asset_group.status,
+  asset_group.ad_strength,
+  campaign.id,
+  campaign.name
+FROM asset_group
+WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+  AND asset_group.status = 'ENABLED'
+"""
+
+GAQL_ASSET_GROUP_ASSETS = """
+SELECT
+  asset_group.id,
+  asset_group_asset.field_type,
+  asset_group_asset.status,
+  asset.type,
+  asset.image_asset.full_size.width_pixels,
+  asset.image_asset.full_size.height_pixels,
+  asset.youtube_video_asset.youtube_video_id
+FROM asset_group_asset
+WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+  AND asset_group_asset.status = 'ENABLED'
+"""
+
+GAQL_ASSET_GROUP_SIGNALS = """
+SELECT
+  asset_group.id,
+  asset_group_signal.audience.audience,
+  asset_group_signal.search_theme.text
+FROM asset_group_signal
+WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+"""
+
+GAQL_SHOPPING_PERFORMANCE = """
+SELECT
+  segments.product_item_id,
+  segments.product_title,
+  segments.product_brand,
+  metrics.cost_micros,
+  metrics.impressions,
+  metrics.clicks,
+  metrics.conversions,
+  metrics.conversions_value
+FROM shopping_performance_view
+WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+  AND segments.date BETWEEN '{start_date}' AND '{end_date}'
+"""
+
 
 class BaseGoogleAdsClient(ABC):
     """Abstract Google Ads client interface pinned to v26."""

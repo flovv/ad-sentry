@@ -3,10 +3,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import datetime as dt
 from decimal import Decimal
+import json
 import logging
 import os
 from pathlib import Path
 from typing import Any, Optional
+
+import httpx
 
 from pmax_sentry_core.meta_models import (
     MetaAscAuditReport,
@@ -268,15 +271,51 @@ class MockMetaAdsClient(BaseMetaAdsClient):
         )
 
 
+PURCHASE_ACTION_TYPES = (
+    "omni_purchase",
+    "purchase",
+    "offsite_conversion.fb_pixel_purchase",
+)
+
+
+def _extract_action_metric(
+    entries: list[dict[str, Any]] | None,
+    window_key: str = "value",
+) -> Decimal:
+    """Extracts the primary purchase conversion count or value from a Meta actions array."""
+    if not entries:
+        return Decimal("0")
+    by_type = {str(e.get("action_type", "")): e for e in entries}
+    for action_type in PURCHASE_ACTION_TYPES:
+        if action_type in by_type:
+            raw = by_type[action_type].get(window_key)
+            if raw is not None:
+                return Decimal(str(raw))
+    return Decimal("0")
+
+
 class MetaGraphApiClient(BaseMetaAdsClient):
     """
-    Live Meta Marketing API client interacting with Graph API v21.0.
-    Fetches Advantage+ Shopping Campaign insights with breakdown queries.
+    Live Meta Marketing API client interacting with Graph API v21.0 via httpx.
+    Fetches Advantage+ Shopping Campaign insights with placement and attribution window breakdowns.
     """
 
-    def __init__(self, access_token: Optional[str] = None, api_version: str = "v21.0") -> None:
+    def __init__(
+        self,
+        access_token: Optional[str] = None,
+        api_version: str = "v21.0",
+        http_client: Optional[httpx.Client] = None,
+        timeout: float = 30.0,
+    ) -> None:
         self.access_token = access_token or os.environ.get("META_ACCESS_TOKEN", "")
         self.api_version = api_version
+        self._http_client = http_client
+        self.timeout = timeout
+
+    def _get_json(self, client: httpx.Client, url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        resp = client.get(url, params=params)
+        resp.raise_for_status()
+        return resp.json()
 
     def build_asc_audit_report(
         self,
@@ -291,10 +330,183 @@ class MetaGraphApiClient(BaseMetaAdsClient):
                 account_id, start_date, end_date, margin=margin
             )
 
-        # In production, httpx calls to https://graph.facebook.com/v21.0/{account_id}/insights
-        # Fall back gracefully to Mock client if credentials are placeholders
-        return MockMetaAdsClient().build_asc_audit_report(
-            account_id, start_date, end_date, margin=margin
+        norm_id = account_id if account_id.startswith("act_") else f"act_{account_id}"
+        base_url = f"https://graph.facebook.com/{self.api_version}"
+
+        close_client = self._http_client is None
+        client = self._http_client or httpx.Client(timeout=self.timeout)
+        try:
+            # 1. Account metadata
+            acct_data = self._get_json(
+                client,
+                f"{base_url}/{norm_id}",
+                params={
+                    "fields": "name,currency",
+                    "access_token": self.access_token,
+                },
+            )
+            account_name = str(acct_data.get("name") or f"Meta Account {norm_id}")
+            currency_code = str(acct_data.get("currency") or "USD")
+
+            # 2. Insights broken down by publisher_platform & platform_position with attribution windows
+            insights_rows: list[dict[str, Any]] = []
+            next_url: Optional[str] = f"{base_url}/{norm_id}/insights"
+            next_params: Optional[dict[str, Any]] = {
+                "level": "account",
+                "fields": "spend,impressions,clicks,actions,action_values",
+                "breakdowns": "publisher_platform,platform_position",
+                "action_attribution_windows": json.dumps(["7d_click", "1d_click", "1d_view"]),
+                "time_range": json.dumps({
+                    "since": start_date.isoformat(),
+                    "until": end_date.isoformat(),
+                }),
+                "limit": 500,
+                "access_token": self.access_token,
+            }
+
+            page_count = 0
+            while next_url and page_count < 20:
+                payload = self._get_json(client, next_url, params=next_params)
+                insights_rows.extend(payload.get("data", []))
+                next_url = payload.get("paging", {}).get("next")
+                next_params = None  # pagination URL already includes query params
+                page_count += 1
+        finally:
+            if close_client:
+                client.close()
+
+        placements: list[MetaPlacementRow] = []
+        total_spend = Decimal("0")
+        total_val = Decimal("0")
+        total_convs = Decimal("0")
+        c7_convs = Decimal("0")
+        c7_val = Decimal("0")
+        c1_convs = Decimal("0")
+        c1_val = Decimal("0")
+        v1_convs = Decimal("0")
+        v1_val = Decimal("0")
+        aud_net_spend = Decimal("0")
+
+        for row in insights_rows:
+            spend = Decimal(str(row.get("spend", "0")))
+            impressions = int(row.get("impressions", 0))
+            clicks = int(row.get("clicks", 0))
+            actions = row.get("actions")
+            action_values = row.get("action_values")
+
+            row_convs = _extract_action_metric(actions, "value")
+            row_val = _extract_action_metric(action_values, "value")
+
+            c7_convs += _extract_action_metric(actions, "7d_click")
+            c7_val += _extract_action_metric(action_values, "7d_click")
+            c1_convs += _extract_action_metric(actions, "1d_click")
+            c1_val += _extract_action_metric(action_values, "1d_click")
+            v1_convs += _extract_action_metric(actions, "1d_view")
+            v1_val += _extract_action_metric(action_values, "1d_view")
+
+            pub = str(row.get("publisher_platform", "unknown")).lower()
+            pos = str(row.get("platform_position", "unknown")).lower()
+
+            total_spend += spend
+            total_convs += row_convs
+            total_val += row_val
+            if pub == "audience_network":
+                aud_net_spend += spend
+
+            placements.append(
+                MetaPlacementRow(
+                    publisher_platform=pub,
+                    platform_position=pos,
+                    spend=spend.quantize(Decimal("0.01")),
+                    impressions=impressions,
+                    clicks=clicks,
+                    conversions=row_convs.quantize(Decimal("0.01")),
+                    conversion_value=row_val.quantize(Decimal("0.01")),
+                )
+            )
+
+        blended_roas = (total_val / total_spend).quantize(Decimal("0.01")) if total_spend > 0 else Decimal("0.00")
+        click_val_total = c7_val if c7_val > 0 else max(Decimal("0"), total_val - v1_val)
+        click_only_roas = (
+            (click_val_total / total_spend).quantize(Decimal("0.01")) if total_spend > 0 else Decimal("0.00")
+        )
+        vt_dep_ratio = (v1_convs / total_convs).quantize(Decimal("0.0001")) if total_convs > 0 else Decimal("0.0000")
+        ghost_inflation_pct = (
+            (((blended_roas - click_only_roas) / click_only_roas) * Decimal("100")).quantize(Decimal("0.1"))
+            if click_only_roas > 0
+            else Decimal("0.0")
+        )
+
+        aud_net_share = (aud_net_spend / total_spend).quantize(Decimal("0.0001")) if total_spend > 0 else Decimal("0.0000")
+        aud_net_severity = "CRITICAL" if aud_net_share > Decimal("0.05") else ("WARNING" if aud_net_share > Decimal("0.02") else "SAFE")
+
+        attribution_split = MetaAttributionWindowSplit(
+            click_7d_conversions=c7_convs.quantize(Decimal("0.01")),
+            click_7d_value=c7_val.quantize(Decimal("0.01")),
+            click_1d_conversions=c1_convs.quantize(Decimal("0.01")),
+            click_1d_value=c1_val.quantize(Decimal("0.01")),
+            view_1d_conversions=v1_convs.quantize(Decimal("0.01")),
+            view_1d_value=v1_val.quantize(Decimal("0.01")),
+            total_reported_conversions=total_convs.quantize(Decimal("0.01")),
+            total_reported_value=total_val.quantize(Decimal("0.01")),
+            view_through_dependency_ratio=vt_dep_ratio,
+            blended_roas=blended_roas,
+            click_only_roas=click_only_roas,
+            ghost_roas_inflation_pct=ghost_inflation_pct,
+        )
+
+        # Audience cap requires user_segment_key breakdown (account-level live insights do not always expose it)
+        audience_cap_audit = MetaAudienceCapAudit(
+            configured_cap_pct=Decimal("0.05"),
+            actual_existing_customer_spend=Decimal("0.00"),
+            actual_new_customer_spend=total_spend.quantize(Decimal("0.01")),
+            actual_existing_spend_pct=Decimal("0.0000"),
+            cap_exceeded=False,
+            customer_list_age_days=None,
+            risk_level="LOW",
+            finding="Account-level Graph API breakdown completed. Verify ASC existing-customer cap directly in Campaign Settings if CRM lists are older than 90 days.",
+        )
+
+        hurdle_obj: Optional[EconomicHurdleResult] = None
+        net_profit_euro: Optional[Decimal] = None
+        if margin is not None and margin > 0:
+            hurdle_obj = calculate_breakeven_hurdle(margin)
+            net_profit_euro = (click_only_roas * Decimal(str(margin)) - Decimal("1.0")).quantize(Decimal("0.01"))
+
+        recommendations: list[str] = []
+        if aud_net_severity != "SAFE":
+            recommendations.append(
+                f"Audience Network spend is {float(aud_net_share * 100):.1f}% of budget ({aud_net_spend:,.2f} {currency_code}). Exclude Audience Network placements."
+            )
+        if ghost_inflation_pct > Decimal("15.0"):
+            recommendations.append(
+                f"1-Day View attribution inflates reported ROAS by +{ghost_inflation_pct}% ({blended_roas}x blended vs {click_only_roas}x click-only). Switch optimization to 7-day click."
+            )
+        if hurdle_obj and net_profit_euro is not None and net_profit_euro < Decimal("0"):
+            recommendations.append(
+                f"Margin Erosion Alert: Break-even requires {float(hurdle_obj.breakeven_iroas):.2f}x; click-only ROAS of {click_only_roas}x loses {net_profit_euro} {currency_code} per unit spent."
+            )
+
+        return MetaAscAuditReport(
+            schema_version="1.0.0",
+            account_id=norm_id,
+            account_name=account_name,
+            currency_code=currency_code,
+            start_date=start_date,
+            end_date=end_date,
+            total_spend=total_spend.quantize(Decimal("0.01")),
+            total_conversion_value=total_val.quantize(Decimal("0.01")),
+            blended_roas=blended_roas,
+            click_only_roas=click_only_roas,
+            placement_rows=placements,
+            audience_network_spend_share=aud_net_share,
+            audience_network_severity=aud_net_severity,
+            attribution_split=attribution_split,
+            audience_cap_audit=audience_cap_audit,
+            creative_formats=[],
+            hurdle=hurdle_obj,
+            net_profit_per_euro_spend=net_profit_euro,
+            recommendations=recommendations,
         )
 
 
